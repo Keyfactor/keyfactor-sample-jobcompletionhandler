@@ -1,7 +1,7 @@
 # keyfactor-jobcompletionhandler-base
 A base framework for implementing a job completion handler in Keyfactor.
 
-Current main branch works with Keyfactor v10.x
+This is the v9.5.4 branch which works with Keyfactor Command v9.5.4 - v9.10.1
 
 # Quick description
 This Orchestrator Job Completion Handler runs for the following jobs:
