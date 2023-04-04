@@ -70,6 +70,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BaseJobCompletionHandler.cs" />
+    <Compile Include="Handlers\InventoryHandler.cs" />
+    <Compile Include="Handlers\ManagementHandler.cs" />
     <Compile Include="Handlers\Models\ReEnrollmentHandlerModel.cs" />
     <Compile Include="Handlers\ReEnrollmentHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

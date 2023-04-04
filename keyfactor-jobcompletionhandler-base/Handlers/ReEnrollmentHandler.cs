@@ -6,7 +6,7 @@
 // required by applicable law or agreed to in writing, software distributed   
 // under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES   
 // OR CONDITIONS OF ANY KIND, either express or implied. See the License for  
-// thespecific language governing permissions and limitations under the       
+// the specific language governing permissions and limitations under the       
 // License. 
 */
 
@@ -106,10 +106,9 @@ namespace SampleExtensions.Handlers.JobCompletion
         #endregion
 
         #region private methods
-        private async Task doSomethingForReenrollment()
+        private Task doSomethingForReenrollment()
         {
-            // Do something here
-            return;
+            return Task.CompletedTask;
         }
         #endregion
     }

@@ -6,7 +6,7 @@
 // required by applicable law or agreed to in writing, software distributed   
 // under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES   
 // OR CONDITIONS OF ANY KIND, either express or implied. See the License for  
-// thespecific language governing permissions and limitations under the       
+// the specific language governing permissions and limitations under the       
 // License. 
 */
 
@@ -18,12 +18,15 @@ using System.Threading.Tasks;
 
 using SampleExtensions.Handlers.JobCompletion;
 using SampleExtensions.Handlers.JobCompletion.Models;
+using System.Reflection.Emit;
 
 //
-// This Orchestrator Job Completion Handler runs for the following jobs:
-//    1.) Re-enrollment
+// This Sample Orchestrator Job Completion Handler demonstrates how to execute specialized code for the following jobs:
+//    1) Inventory
+//    2) Management
+//    3) Re-enrollment
 //
-// For the re-enrollment jobs, the completion handler doesn't do anything.
+// For all jobs, the completion handler doesn't do anything.
 // Instead a framework
 //
 // To add this to KeyFactor:
@@ -34,6 +37,7 @@ using SampleExtensions.Handlers.JobCompletion.Models;
 
 /*
 <register type="IOrchestratorJobCompleteHandler" mapTo="SampleExtensions.BaseJobCompletionHandler, keyfactor-jobcompletionhandler-base" name="BaseJobCompletionHandler">
+    <property name="JobTypes" value="" /> <!-- The value should include a valid GUID for the JobTypes you wish to execute this completion handler for -->
     <property name="KeyfactorAPI" value="https://someurl.kfops.com/KeyfactorAPI" /> <!-- Target for the Keyfactor API -->
     <property name="AuthHeader" value="Basic b64encodedusername:password" /> <!-- for example Basic S0VZRkFDVE9SXHNvbWVvbmU6c29tZXBhc3N3b3J -->
 </register>
@@ -67,39 +71,24 @@ namespace SampleExtensions
         #endregion
 
         #region Unity Properties
+        // Properties are used to send and received data to/from KF Command through Unity's Dependency Injection  
+        // These are public properties that are used by Unity when the handler is called
         public string KeyfactorAPI { get; set; }
         public string AuthHeader { get; set; } = String.Empty; // Default to an empty string.
         #endregion
 
         #region Hard Coded Properties
-        private const string PEM_Reenrollment = "Reenrollment";
-        //TODO: For your completion handler, just publish the job types you need.  This is a list of every job type possible
-        private const string implementedJobTypes = "C367D107-5D39-4565-9F3B-8AD9F8F28350";
-        
-        //"3BEE64F4-0EF1-4D65-A862-31CAA4CA2F4E,F672718E-DE09-481A-B21B-906AA0A43023," +
-        //                                            "AFB8C78D-1436-4C93-A8E7-0218C2CB6955,56C1E4F9-366C-44B3-8CAE-1B8F39E2026C," +
-        //    "9B04E8DE-E2CE-4A50-BD3F-31037D3EE751,E9A34338-C99F-46DA-94D2-4F97DC6943AF,77651281-DFFA-47DD-AF47-267A2DEBD617," +
-        //    "1253642F-321B-45B4-A754-44C07DDC3D64,63E394D4-B73B-43D3-8A96-07907A864C74,0CFD99FE-61BF-4A1A-91AA-DFF58B75BFBF," +
-        //    "0D893E43-FBE4-4E32-8067-6999E70C6864,B98621F3-D779-40D3-8F09-EECF32D68183,433D98CA-E570-4F7A-8F32-4D31DC19002E," +
-        //    "7639C64D-BBF1-402A-8838-1A8EE5E06855,1802DF3C-322B-4E4C-AD59-6E84DA1AA88E,76F99194-C129-4954-B76E-11C80816643E," +
-        //    "4AE72D54-7F91-4359-9DA5-E1F633031070,5B9CF048-E95F-4331-A510-0CDFABAC1703,CE2325E3-801C-4576-9B0A-5FDCAF66AA88," +
-        //    "B80019D6-DF3D-4A8C-9E60-1977B806F545,74D9F7C5-B2AC-4F21-A72B-29B5ADC90651,67B63010-D738-47C3-87A2-9F289466C881," +
-        //    "B614F9E2-C56B-421C-B548-03D42EB32F8A,48743E90-108E-4DC3-B81C-7FB830215D1F,5DFF7BAF-E041-43E6-AC66-DE0CD0A26E4C," +
-        //    "78FF1C19-893F-4E5E-90A5-0459F1823778,B7C94AD1-8A33-45EA-98B3-D77CA14E7830,60BD1FD9-5AE3-4E32-A1AC-A66E2A8D2B1E," +
-        //    "E98151DE-53AD-4B99-B52A-F37118EC0C5C,A809CE1F-1EEA-4738-A38E-15708C89C981,1D411B36-AE72-433F-9F3F-8593E836A1AF," +
-        //    "AA015D10-CFFC-41F7-A9A4-C9615F6F3BDF,BECB11D3-413D-4750-8A3A-B2F9C1CF8C30,0D8CF0C8-56CA-4B8A-B16A-C062018E170D," +
-        //    "FD157149-31A1-4489-98AB-0759FAFB8187,8AC4E454-41EA-4ED3-96D0-FDB3FB301E0C,6F9D8CE8-CCFB-4FC7-9FCF-95B21A672416," +
-        //    "332ABD4E-CF9A-4449-A550-3C984A2399F9,ECD5758A-2F05-49B1-9373-D9BDE7077F59";
+        // These hard coded values are specific to an example Cert Store WinCert
+        private const string Inventory = "WinCertInventory";
+        private const string Management = "WinCertManagement";
+        private const string Reenrollment = "WinCertReenrollment";
         #endregion
 
         #region Handler Configuration Methods
         /// <summary>
-        /// Which jobs should the handler run?  A comma separated list of capabilities as Strings or GUIDs
+        /// Which jobs should the handler run?  A comma separated list of capabilities as Strings or GUIDs (from web.config - see above for more info)
         /// </summary>
-        public string JobTypes
-        {
-            get { return implementedJobTypes; }
-        }
+        public string JobTypes { get; set; }
 
         /// <summary>
         /// Here is the hook for the job types. This should call the appropriate function for the job.
@@ -134,9 +123,17 @@ namespace SampleExtensions
             Logger.LogTrace($"The context passed is: \r\n[\r\n{ParseContext(context)}\r\n]");
             switch (context.JobType)
             {
-                // Show an example of linking to a PEM Reenrollment job & executing it.
-                // NOTE: The assumption is that we are going to do some REST API calls, so we should be performing async operations
-                case PEM_Reenrollment:
+                // Example of linking to the various job types & executing it.
+                // NOTE: The assumption is if we are going to do some REST API calls, so we should be performing async operations
+                case Inventory:
+                    Logger.LogTrace($"Performing job completion handler for the Inventory job on orchestrator [{context.AgentId}/{context.ClientMachine}]");
+                    bResult = await Task.Run(() => run_InventoryHandler(context));
+                    break;
+                case Management:
+                    Logger.LogTrace($"Performing job completion handler for the Management job on orchestrator [{context.AgentId}/{context.ClientMachine}]");
+                    bResult = await Task.Run(() => run_ManagementHandler(context));
+                    break;
+                case Reenrollment:
                     Logger.LogTrace($"Performing job completion handler for the re-enrollment job on orchestrator [{context.AgentId}/{context.ClientMachine}]");
                     bResult = await Task.Run(() => run_reenrollmenthandler(context));
                     break;
@@ -149,6 +146,90 @@ namespace SampleExtensions
         #endregion
 
         #region private methods
+        /// <summary>
+        /// Call this class to handle the details of running the Inventory handler
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        private bool run_InventoryHandler(OrchestratorJobCompleteHandlerContext context)
+        {
+            bool bResult = false;
+
+            Logger.LogTrace($"Creating instance of the Inventory handler and passing control to it for orchestrator [{context.AgentId}/{context.ClientMachine}]");
+
+            try
+            {
+                InventoryHandler handler = new InventoryHandler();
+                handler.do_InventoryHandler(context);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"FAILURE in Discovery Handler for orchestrator [{context.AgentId}/{context.ClientMachine}] {ex.Message}");
+                throw new Exception($"FAILURE in Discovery Handler for orchestrator [{context.AgentId}/{context.ClientMachine}] {ex.Message}");
+            }
+
+            return bResult;
+
+        } // run_DiscoveryHandler
+
+        /// <summary>
+        /// Call this class to handle the details of running the management handler
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        private bool run_ManagementHandler(OrchestratorJobCompleteHandlerContext context)
+        {
+            bool bResult = false;
+
+            Logger.LogTrace($"Creating instance of the Management handler and passing control to it for orchestrator [{context.AgentId}/{context.ClientMachine}]");
+
+            try
+            {
+                ManagementHandler handler = new ManagementHandler(context);
+
+                // Management jobs has multiple Operational Types as shown with the switch below:
+                // All operation types are listed for illustration purposes only.
+                switch (context.OperationType)
+                {       
+                    case Keyfactor.Orchestrators.Common.Enums.CertStoreOperationType.Unknown:
+                        break;
+                    case Keyfactor.Orchestrators.Common.Enums.CertStoreOperationType.Inventory:
+                        break;
+                    case Keyfactor.Orchestrators.Common.Enums.CertStoreOperationType.Add:
+                        handler.do_ManagementAddHandler();
+                        break;
+                    case Keyfactor.Orchestrators.Common.Enums.CertStoreOperationType.Remove:
+                        handler.do_ManagementRemoveHandler();
+                        break;
+                    case Keyfactor.Orchestrators.Common.Enums.CertStoreOperationType.Create:
+                        break;
+                    case Keyfactor.Orchestrators.Common.Enums.CertStoreOperationType.CreateAdd:
+                        break;
+                    case Keyfactor.Orchestrators.Common.Enums.CertStoreOperationType.Reenrollment:
+                        break;
+                    case Keyfactor.Orchestrators.Common.Enums.CertStoreOperationType.Discovery:
+                        break;
+                    case Keyfactor.Orchestrators.Common.Enums.CertStoreOperationType.SetPassword:
+                        break;
+                    case Keyfactor.Orchestrators.Common.Enums.CertStoreOperationType.FetchLogs:
+                        break;
+                    default:
+                        break;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"FAILURE in Management Handler for orchestrator [{context.AgentId}/{context.ClientMachine}] {ex.Message}");
+                throw new Exception($"FAILURE in Management Handler for orchestrator [{context.AgentId}/{context.ClientMachine}] {ex.Message}");
+            }
+
+            return bResult;
+
+        } // run_ManagementHandler
+
         /// <summary>
         /// Call the class that handles the details of running the reenrollment handler
         /// </summary>
