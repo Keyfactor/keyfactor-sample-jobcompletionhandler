@@ -28,11 +28,27 @@ This example Orchestrator Job Completion Handler runs for the following jobs:
 The completion handler doesn't do anything. Instead this is a framework for creating other JobCompletionHandlers.
 
 The example application contains the class BaseJobCompletionHandler.cs which implements the IOrchestratorJobCompleteHandler.  The interface Implements a string property for the JobType GUIDs and a Boolean method RunHandler that includes the OrchestratorJobCompleteHandlerContext (context) object.
-You will use the context object containing various properties to complete your handler.  See the appendix below for additional details regarding the context object.
+You will use the context object containing various properties to complete your handler.
 
-The JobTypes property is a string of comma delimited GUIDs identifying which jobs this handler will be executed for.  To get the list of your GUIDs for the jobs you wish to execute will depend on how your environment is hosted.  If you are a Cloud Hosted customer, you will need to reach out to a Keyfactor representative to help you receive the GUIDs.  If you are a self-hosted environment and have access to the database, you can get the GUIDs from the [cms_agents.JobTypes] table in the KFCommand database.
+The JobTypes property is a string of comma delimited GUIDs identifying which jobs this handler will be executed for. 
 
-Once Keyfactor Command determines the JobType exists, the `RunHander` method that passes the `OrchestratorJobCompletionHandlerContext` object which contains various property information and HTTP client you can use throughout your handler.  The context object also contains a JobType property that contains the name of the Store Type Capability.  The JobType comes from the Name field from the same [cms_agents.JobTypes] table.  This valus is comprised of the Store Type name and the capability.  For example, a store type name of WinCert has the Inventory, Management and Reenrollment capabilities, the JobType names would be WinCertInventory, WinCertManagement and WinCertReenrollment.  Please be aware that for each capability, the matching GUID must be included when setting up the handler in Unity.
+## Finding Your GUIDs
+Using the Keyfactor API Reference and Utility, scroll down to the *CertificateStoreType* API, and select the GET/CertificateStoreTypes/Name/{name} end point. Enter the short name of the store type you wish inquire about.  Click the `Try it out!` button to execute the API.
+
+Additionally, you can execute the following curl command, replaceing {name} with the short name of your store type.
+
+`curl -X GET --header 'Accept: application/json' --header 'x-keyfactor-api-version: 1' --header 'x-keyfactor-requested-with: APIClient' 'https://bpokorny-lab.kfdelivery.com/Keyfactor/API/CertificateStoreTypes/Name/{name}'`
+
+Once the response is returned, scroll down to the end of the JSON result.  You should see a list of Job Types and their associated GUIDs.  Below is an example of Jo Types - there could be more or less job types depending on what the store type is set up to execute:
+
+![StoreTypeResponse](https://user-images.githubusercontent.com/55611381/230181237-673b9e1e-9d08-4d94-bce7-070d09d9d92a.png)
+
+Once Keyfactor Command determines the JobType exists, the `RunHander` method will get called, passing the `OrchestratorJobCompletionHandlerContext` object which contains various property information and HTTP client you can use throughout your handler.  
+The context object also contains a JobType property that contains the name of the Store Type Capability.  The JobType is a string concatination of the cert store short name and the job capability.  For example, the cert store name of WinCert that performs a reenrollment, the JobType property would contain the string WinCertReenrollment.  Most common job types include:
+- Discovery
+- Inventory
+- Management
+- Reenrollment
 
 # Registering Job Completion Handlers
 To add this to KeyFactor:
