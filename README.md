@@ -51,12 +51,12 @@ The context object also contains a JobType property that contains the name of th
 - Reenrollment
 
 # Registering Job Completion Handlers
-To add this to KeyFactor:
+To add this handler to KeyFactor:
 - Edit C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\web.config
 - Add the following new registration inside of <unity><container> along with the other <register ... /> items
 ```
 <register type="IOrchestratorJobCompleteHandler" mapTo="SampleExtensions.BaseJobCompletionHandler, keyfactor-jobcompletionhandler-base" name="BaseJobCompletionHandler">
-    <property name="JobTypes" value="" /> <!-- A comma delimited list of given GUIDs -->
+    <property name="JobTypes" value="" /> <!-- A required comma delimited list of given GUIDs -->
     <property name="KeyfactorAPI" value="https://someurl.kfops.com/KeyfactorAPI" /> <!-- for example Target for the Keyfactor API -->
     <property name="AuthHeader" value="Basic b64encodedusername:password" /> <!-- for example Basic S0VZRkFDVE9SXHNvbWVvbmU6c29tZXBhc3N3b3J -->
 </register>
@@ -74,3 +74,5 @@ Adding the following to the KF Nlog config in the <Rules> section will output at
 ```
 <logger name="*.BaseJobCompletionHandler" minlevel="Trace" writeTo="logfile" final="true"/>
 ```
+# Summary
+This document has provided us a framework necessary to create a Job Completion Handler for any specific job type.  Information was provided for using the Keyfactor APIs to find the correct GUIDs to process specific job types.  The framework also provided examples for handling Inventory, Management and Reenrollment jobs, along with how to access the context properties and a working HTTP Client.  Once the handler has been developed, instructions were provided describing how to add the handler to the Unity container so Keyfactor Command can call the appropriate handler.  For additional information, please refer to the comments in the example source code.
