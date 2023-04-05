@@ -51,6 +51,8 @@ The compiled assembly **keyfactor-jobcompletionhandler-base.dll** goes in:
     
 Important note: when copying over dependencies for the handler, it is important to not override existing DLLs in the target location. You will need to make sure that the handler references the same versions of libraries already in use in the WebAgentServices location. A compatibility list for library dependencies is in the works.
 
+This Unity registration will require that the web server is restarted, which can be done when safe by running iisreset in a command console. The Agent API server should be checked at this point as errors in the handler registration can prevent other Keyfactor Orchestrators from communicating with the platform.
+    
 Adding the following to the KF Nlog config in the <Rules> section will output at trace the registration related information
 - Usually located at C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\NLog_Orchestrators.config
 ```
