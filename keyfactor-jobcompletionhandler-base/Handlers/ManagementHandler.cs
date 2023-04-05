@@ -18,6 +18,7 @@ using SampleExtensions.Handlers.JobCompletion.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -91,6 +92,14 @@ namespace SampleExtensions.Handlers.JobCompletion
         #region privateMethods
         private Task doSomethingForManagementAdd()
         {
+            // This method shows an example hoe to use the HTTP Client to get the job history for the job just completed
+            // https://bpokorny-lab.kfdelivery.com/Keyfactor/API/OrchestratorJobs/JobHistory?pq.queryString=JobID%20-eq%20%22%22
+            string query = $@"OrchestratorJobs/JobHistory?pq.queryString=JobID%20-eq%20%22{context.JobId}%22";
+            Task<HttpResponseMessage> task = Task.Run<HttpResponseMessage>(async () => await context.Client.GetAsync(query));
+            string result = task.Result.Content.ReadAsStringAsync().Result;
+
+            // Do something with the result value
+
             return Task.CompletedTask;
         }
 

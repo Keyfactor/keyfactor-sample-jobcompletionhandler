@@ -74,7 +74,7 @@ namespace SampleExtensions.Handlers.JobCompletion
 
             try
             {
-                // Do something for after inventory job completed
+                // Do something after inventory job completed
                 await doSomethingForInventory(context);
             }
             catch (Exception ex)
@@ -90,6 +90,7 @@ namespace SampleExtensions.Handlers.JobCompletion
         #region private methods
         private Task doSomethingForInventory(OrchestratorJobCompleteHandlerContext context)
         {
+            // This method can be used to add custom code to perform additional non-Keyfactor functions.
             return Task.CompletedTask;
         }
         #endregion
