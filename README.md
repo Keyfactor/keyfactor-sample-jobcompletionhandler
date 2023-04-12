@@ -1,7 +1,7 @@
 # keyfactor-jobcompletionhandler-base
 A base framework for implementing a job completion handler in Keyfactor.
 
-Current main branch works with Keyfactor v10.x
+The current handler has been tested with Keyfactor v10.x
 
 # Overview
 A Job Completion Hander is an event that gets raised when any job has been completed.  Users can write custom code to perform specific tasks once a job is completed.  Completion handlers get raised whether a job completes successfully or fails.  If there is a valid job registered and configured properly, the custom completion handler logic will be executed.
@@ -20,10 +20,11 @@ Using your favorite means, download and bring the code from this repo into Visua
 # Understanding the Code
 The source code does provide additional comments to help understand the code.
 
-This example Orchestrator Job Completion Handler runs for the following jobs:
-1. Inventory
-2. Management
-3. Re-enrollment
+Job Completion Handlers can run for the following job types:
+1. Discovery
+2. Inventory
+3. Management
+4. Re-enrollment
 
 The completion handler doesn't do anything. Instead this is a framework for creating other JobCompletionHandlers.
 
@@ -37,9 +38,9 @@ Using the Keyfactor API Reference and Utility, scroll down to the *CertificateSt
 
 Additionally, you can execute the following curl command, replaceing {name} with the short name of your store type.
 
-`curl -X GET --header 'Accept: application/json' --header 'x-keyfactor-api-version: 1' --header 'x-keyfactor-requested-with: APIClient' 'https://bpokorny-lab.kfdelivery.com/Keyfactor/API/CertificateStoreTypes/Name/{name}'`
+`curl -X GET --header 'Accept: application/json' --header 'x-keyfactor-api-version: 1' --header 'x-keyfactor-requested-with: APIClient' 'https://{server}/Keyfactor/API/CertificateStoreTypes/Name/{name}'`
 
-Once the response is returned, scroll down to the end of the JSON result.  You should see a list of Job Types and their associated GUIDs.  Below is an example of Jo Types - there could be more or less job types depending on what the store type is set up to execute:
+Once the response is returned, scroll down to the end of the JSON result.  You should see a list of Job Types and their associated GUIDs.  Below is an example of Job Types - there could be more or less job types depending on what the store type is set up to execute:
 
 ![StoreTypeResponse](https://user-images.githubusercontent.com/55611381/230181237-673b9e1e-9d08-4d94-bce7-070d09d9d92a.png)
 
