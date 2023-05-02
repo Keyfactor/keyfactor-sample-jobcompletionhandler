@@ -26,7 +26,7 @@ Job Completion Handlers can run for the following job types:
 3. Management
 4. Re-enrollment
 
-The completion handler doesn't do anything. Instead this is a framework for creating other JobCompletionHandlers.
+This example completion handler shows the minimum to get you started. This is a framework for creating other JobCompletionHandlers.
 
 The example application contains the class BaseJobCompletionHandler.cs which implements the IOrchestratorJobCompleteHandler.  The interface Implements a string property for the JobType GUIDs and a Boolean method RunHandler that includes the OrchestratorJobCompleteHandlerContext (context) object.
 You will use the context object containing various properties to complete your handler.
