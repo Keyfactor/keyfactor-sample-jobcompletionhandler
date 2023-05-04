@@ -61,8 +61,7 @@ namespace SampleExtensions.Handlers.JobCompletion
         {
             _model = new ReEnrollmentHandlerModel
             {
-                KeyfactorAPI = model.KeyfactorAPI,
-                AuthHeader = model.AuthHeader,
+                FavoriteAnimal = model.FavoriteAnimal
             };
         }
         #endregion
@@ -76,6 +75,8 @@ namespace SampleExtensions.Handlers.JobCompletion
         public async void do_ReenrollmentHandler(OrchestratorJobCompleteHandlerContext context)
         {
             Logger.LogTrace($"Entered function ReenrollmentHandler for orchestrator [{context.AgentId}/{context.ClientMachine}]");
+
+            Logger.LogTrace($"My favorite animal is: {_model.FavoriteAnimal}");
 
             // Only run on a successful job
             if (OrchestratorJobStatusJobResult.Success != context.JobResult)

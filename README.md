@@ -57,9 +57,8 @@ To add this handler to KeyFactor:
 - Add the following new registration inside of <unity><container> along with the other <register ... /> items
 ```
 <register type="IOrchestratorJobCompleteHandler" mapTo="SampleExtensions.BaseJobCompletionHandler, keyfactor-jobcompletionhandler-base" name="BaseJobCompletionHandler">
-    <property name="JobTypes" value="" /> <!-- A required comma delimited list of given GUIDs -->
-    <property name="KeyfactorAPI" value="https://someurl.kfops.com/KeyfactorAPI" /> <!-- for example Target for the Keyfactor API -->
-    <property name="AuthHeader" value="Basic b64encodedusername:password" /> <!-- for example Basic S0VZRkFDVE9SXHNvbWVvbmU6c29tZXBhc3N3b3J -->
+    <property name="JobTypes"       value="" />      <!-- A required comma delimited list of job type GUIDs that the handler is prepared to handle -->
+    <property name="FavoriteAnimal" value="Tiger" /> <!-- Sample parameter that the completion handler class has as a public property -->
 </register>
 ```
 

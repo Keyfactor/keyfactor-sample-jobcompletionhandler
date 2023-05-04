@@ -38,9 +38,8 @@ using System.Diagnostics;
 
 /*
 <register type="IOrchestratorJobCompleteHandler" mapTo="SampleExtensions.BaseJobCompletionHandler, keyfactor-jobcompletionhandler-base" name="BaseJobCompletionHandler">
-    <property name="JobTypes" value="" /> <!-- The value should include a valid GUID for the JobTypes you wish to execute this completion handler for -->
-    <property name="KeyfactorAPI" value="https://someurl.kfops.com/KeyfactorAPI" /> <!-- Target for the Keyfactor API -->
-    <property name="AuthHeader" value="Basic b64encodedusername:password" /> <!-- for example Basic S0VZRkFDVE9SXHNvbWVvbmU6c29tZXBhc3N3b3J -->
+    <property name="JobTypes" value="" />            <!-- The value should include a valid GUID for the JobTypes you wish to execute this completion handler for -->
+    <property name="FavoriteAnimal" value="Tiger" /> <!-- Sample parameter that the completion handler class has as a public property -->
 </register>
 */
 //
@@ -72,10 +71,19 @@ namespace SampleExtensions
         #endregion
 
         #region Unity Properties
-        // Properties are used to send and received data to/from KF Command through Unity's Dependency Injection  
-        // These are public properties that are used by Unity when the handler is called
-        public string KeyfactorAPI { get; set; }
-        public string AuthHeader { get; set; } = String.Empty; // Default to an empty string.
+
+        // Parameters may be passed into the completion handler via the Unity registration in the web.config file
+        // for the Orchestrator API endpoint. When the Unity Dependency Injection loads this class, it will apply
+        // values in the configuration to the class public properties.
+        //
+        // Typically these would be used to configure the behavior of the handler. These might be used to indicate
+        // if the logic in the handler should operate in production or test mode; or to configure external API 
+        // addresses or credentials needed to talk to external systems.
+        //
+        // In this sample we will simply log out the parameter passed in.
+
+        public string FavoriteAnimal { get; set; }
+
         #endregion
 
         #region Hard Coded Properties
@@ -121,7 +129,10 @@ namespace SampleExtensions
             }
 
             Logger.LogTrace($"Entering Job Completion Handler for orchestrator = [{context.AgentId}/{context.ClientMachine}] and JobType = {context.JobType}");
+            Logger.LogTrace($"This handler's favorite animal is: {FavoriteAnimal}");
             Logger.LogTrace($"The context passed is: \r\n[\r\n{ParseContext(context)}\r\n]");       // This logs the entire context to the log file
+
+
             switch (context.JobType)
             {
                 // Example of linking to the various job types & executing it.
@@ -233,11 +244,11 @@ namespace SampleExtensions
         private bool executeReenrollmentHandler(OrchestratorJobCompleteHandlerContext context)
         {
             bool bResult = false;
+
             Logger.LogTrace($"Creating instance of the reenrollment handler and passing control to it for orchestrator [{context.AgentId}/{context.ClientMachine}]");
             ReEnrollmentHandlerModel parameters = new ReEnrollmentHandlerModel()
             {
-                KeyfactorAPI = this.KeyfactorAPI,
-                AuthHeader = this.AuthHeader,
+                FavoriteAnimal = this.FavoriteAnimal
             };
 
             try
