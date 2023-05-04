@@ -258,6 +258,9 @@ namespace SampleExtensions
 
                 Logger.LogTrace($"This is where you could create custom for operation type: {context.OperationType}");
 
+
+                bResult = true;
+
             }
             catch (Exception ex)
             {
@@ -289,6 +292,8 @@ namespace SampleExtensions
             {
                 ReEnrollmentHandler handler = new ReEnrollmentHandler(parameters);
                 handler.do_ReenrollmentHandler(context);
+
+                bResult = true;
             }
             catch (Exception ex)
             {
