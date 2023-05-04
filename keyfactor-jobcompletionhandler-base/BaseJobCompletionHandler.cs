@@ -54,7 +54,10 @@ namespace SampleExtensions
 {
     public class BaseJobCompletionHandler : IOrchestratorJobCompleteHandler
     {
-        #region LoggerInit
+        #region Logger Setup
+
+        // Setup a logger object so that we can emit log messages to the standard Command logs.
+
         private ILogger _logger;
         public ILogger Logger
         {
@@ -68,60 +71,74 @@ namespace SampleExtensions
                 return _logger;
             }
         }
+
         #endregion
 
         #region Unity Properties
 
-        // Parameters may be passed into the completion handler via the Unity registration in the web.config file
-        // for the Orchestrator API endpoint. When the Unity Dependency Injection loads this class, it will apply
+        // JobTypes is a required public property. It will contain a comma separated list of the job type GUIDs that
+        // that the handler should be prepared to handle. This value is set in the Unity configuration.
+        // Command will only call this handler when jobs of types in this list are complete.
+        // This sample doesn't make use of this property.
+
+        public string JobTypes { get; set; }
+
+        // Custom parameters may be passed into the completion handler via the Unity registration in the web.config 
+        // file for the Orchestrator API endpoint. When the Unity Dependency Injection loads this class, it will apply
         // values in the configuration to the class public properties.
         //
         // Typically these would be used to configure the behavior of the handler. These might be used to indicate
         // if the logic in the handler should operate in production or test mode; or to configure external API 
         // addresses or credentials needed to talk to external systems.
         //
-        // In this sample we will simply log out the parameter passed in.
+        // In this sample we will log out the parameter passed in.
 
         public string FavoriteAnimal { get; set; }
 
         #endregion
 
-        #region Hard Coded Properties
-        // These hard coded values are specific to an example Cert Store WinCert
+        #region Hard Coded Job Configuration
+
+        // When this handler is called, a context object is included that contains the internal name
+        // of the job type that completed. For certificate store job types, this string is the internal
+        // certificate store type name (capability name) concatenated with logical job type (Inventory, 
+        // Management, Reenrollment, Discovery). For non-store related jobs different job type names may occur.
+
+        // In this sample we are handling Windows Certificate (WinCert) jobs, so we set up some constants 
+        // to make the dispatching of handlers for each job easier. The WinCert orchestrator extension doesn't
+        // perform discovery jobs, so we don't map it.
+
         private const string Inventory = "WinCertInventory";
         private const string Management = "WinCertManagement";
         private const string Reenrollment = "WinCertReenrollment";
+
         #endregion
 
-        #region Handler Configuration Methods
-        /// <summary>
-        /// Which jobs should the handler run?  A comma separated list of capabilities as Strings or GUIDs (from web.config - see above for more info)
-        /// </summary>
-        public string JobTypes { get; set; }
+        #region Handler Entry Point
 
-        /// <summary>
-        /// Here is the hook for the job types. This should call the appropriate function for the job.
-        /// NOTE: This is a synchronous function call.  It is not a Task, so don't define it as async
-        /// Instead, run everything else as Async & wrap the call inside a Task.Run....
-        /// </summary>
-        /// <param name="context"></param>
-        /// <returns></returns>
+        // Whenever an orchestrator job completes whose JobType GUID is in the Unity configured list of GUIDs (JobTypes),
+        // the RunHandler method is called and passed a context object containing the details of the job that has
+        // completed. It is up to the code in the handler to perform whatever custom processing is desired.
+        //
+        // Note that this method is a synchronous function call. It is not a task and should not be defined
+        // as async. Because this sample demonstrates making async calls to the Command API, we need to transition
+        // from synchronous to asynchronous - this is done by wrapping our dispatch call in a Task.Run
+
         public bool RunHandler(OrchestratorJobCompleteHandlerContext context)
         {
             Task<bool> RunHandlerResult = Task.Run<bool>(async () => await AsyncRunHandler(context));
             return RunHandlerResult.Result;
         } // RunHandler
-        #endregion
 
-        #region JobCompletionHandler
-        /// <summary>
-        /// This is the async form of the Run Handler.  In this manner, we can call HttpClient calls Asynchronously
-        /// </summary>
-        /// <param name="context"></param>
-        /// <returns></returns>
+
+        // Async entry point
+
         private async Task<bool> AsyncRunHandler(OrchestratorJobCompleteHandlerContext context)
         {
             bool bResult = false; // Assume failure
+
+            // Make sure we got a context
+
             if (null == context)
             {
                 Logger.LogError($"Error!  The context passed to the Job Handler is null");
@@ -177,7 +194,7 @@ namespace SampleExtensions
 
                 // The example code shown below demonstrates how to use the HttpClient to call a Keyfactor API to show the job history
                 if (context.Client != null)
-                {                
+                {
                     string query = $@"OrchestratorJobs/JobHistory?pq.queryString=JobID%20-eq%20%22{context.JobId}%22";
                     Task<HttpResponseMessage> task = Task.Run<HttpResponseMessage>(async () => await context.Client.GetAsync(query));
                     string result = task.Result.Content.ReadAsStringAsync().Result;
