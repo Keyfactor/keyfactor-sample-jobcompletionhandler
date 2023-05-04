@@ -16,8 +16,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
 
-using SampleExtensions.Handlers.JobCompletion;
-using SampleExtensions.Handlers.JobCompletion.Models;
 using System.Reflection.Emit;
 using System.Net.Http;
 using System.Diagnostics;
@@ -280,18 +278,13 @@ namespace SampleExtensions
         /// <exception cref="Exception"></exception>
         private bool executeReenrollmentHandler(OrchestratorJobCompleteHandlerContext context)
         {
-            bool bResult = false;
+            Logger.LogTrace($"Entered ReenrollmentHander handler for orchestrator [{context.AgentId}/{context.ClientMachine}]");
 
-            Logger.LogTrace($"Creating instance of the reenrollment handler and passing control to it for orchestrator [{context.AgentId}/{context.ClientMachine}]");
-            ReEnrollmentHandlerModel parameters = new ReEnrollmentHandlerModel()
-            {
-                FavoriteAnimal = this.FavoriteAnimal
-            };
+            bool bResult = false;
 
             try
             {
-                ReEnrollmentHandler handler = new ReEnrollmentHandler(parameters);
-                handler.do_ReenrollmentHandler(context);
+                Logger.LogTrace($"Custom logic for Reenrollment completion handler here");
 
                 bResult = true;
             }
