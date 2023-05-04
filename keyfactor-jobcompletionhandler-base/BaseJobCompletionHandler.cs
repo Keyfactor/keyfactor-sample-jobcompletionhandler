@@ -192,14 +192,31 @@ namespace SampleExtensions
                 // This is where you can create your own custom logic after the Inventory job has been completed.
                 Logger.LogTrace("The job completion handler for Inventory code would execute here.");
 
-                // The example code shown below demonstrates how to use the HttpClient to call a Keyfactor API to show the job history
+
+                // It is a common use case that job completion handlers need to reach back into the Command API to
+                // perform various operations. For this purpose, the context object contains an initialized 
+                // HTTPClient that points to the Command API on the server that is calling this handler. The client also has
+                // the security context of Application Pool with which the Orchestrator endpoint is running as. 
+                // Assuming that Windows Authentication is enabled on the endpoint (which is by default), and
+                // assuming that the App Pool account has been granted the appropriate API privileges, this allows
+                // easy calling of the API without having to manage a set of credentials in code or in the Unity
+                // configuration.
+
+                // In this example we retrieve the job history for the job that just completed. We don't do anything
+                // with the results, but history could be examined to see if the job we repeatedly failing and then
+                // take some corrective action. For this example to work, the App Pool account needs to have been granted
+                // the Agent Management Read permission
+
                 if (context.Client != null)
                 {
+                    // Command API Orchestrator Job History query
                     string query = $@"OrchestratorJobs/JobHistory?pq.queryString=JobID%20-eq%20%22{context.JobId}%22";
+
+                    // Execute the API call with the provided HTTPClient
                     Task<HttpResponseMessage> task = Task.Run<HttpResponseMessage>(async () => await context.Client.GetAsync(query));
                     string result = task.Result.Content.ReadAsStringAsync().Result;
 
-                    // Do something with the results
+                    // Log out the results - normally some processing would be done on the results
                     Logger.LogTrace($"Results of JobHistory API: {result}");
 
                     // If custom code completed successfully, change the result flag to True marking the handler as complete and successful.
