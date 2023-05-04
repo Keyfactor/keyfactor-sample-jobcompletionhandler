@@ -165,7 +165,7 @@ namespace SampleExtensions
                 Logger.LogTrace("The job completion handler for Inventory code would execute here.");
 
                 // The example code shown below demonstrates how to use the HttpClient to call a Keyfactor API to show the job history
-                if (context.Client == null)
+                if (context.Client != null)
                 {                
                     string query = $@"OrchestratorJobs/JobHistory?pq.queryString=JobID%20-eq%20%22{context.JobId}%22";
                     Task<HttpResponseMessage> task = Task.Run<HttpResponseMessage>(async () => await context.Client.GetAsync(query));
@@ -275,7 +275,7 @@ namespace SampleExtensions
             pairs[8] = string.Join(" : ", nameof(context.CertificateId), context.CertificateId == null ? "null" : context.CertificateId.ToString());
             pairs[9] = string.Join(" : ", nameof(context.RequestTimestamp), context.RequestTimestamp == null ? "null" : context.RequestTimestamp.ToString());
             pairs[10] = string.Join(" : ", nameof(context.CurrentRetryCount), context.CurrentRetryCount.ToString());
-            pairs[11] = string.Join(" : ", nameof(context.Client), context.Client.ToString());
+            pairs[11] = string.Join(" : ", nameof(context.Client), context.Client.BaseAddress == null ? "null" : context.Client.BaseAddress.ToString());
 
             result = string.Join(",\r\n", pairs);
 
