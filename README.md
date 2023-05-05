@@ -80,6 +80,8 @@ all of the possible job types. The WinCert store implements the above three job 
 #### 3 - Build the sample extension
 
 Add Keyfactor's GitHub NuGet package repository to your list of Visual Studio NuGet package sources.
+You will need to create a GitHub personal access token and use it to authenticate to the GitHub package source.
+[Instructions TBD]
 
 Use Visual Studio to build the solution file in this repository.
 
@@ -101,7 +103,8 @@ Job completion handlers are registered via Unity.
 Edit the web.config for the Orchestrator API endpoint on the Command Server. This is typically found at 
 `C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\web.config`
 
-Add the following new registration inside of `<unity><container>` along with the other <register ... /> items. 
+Add the following new registration inside of `<unity><container>` along with the other <register ... /> items.
+Use the job type GUIDs from your environment instead of the ones below.  
 ```
 <register type="IOrchestratorJobCompleteHandler" mapTo="KFSample.SampleJobCompletionHandler, SampleJobCompletionHandler" name="SampleJobCompletionHandler">
     <property name="JobTypes" value="49b3a17d-cada-4ec8-84c6-7719bf5beef3,4be14534-55b0-4cd7-9871-536b55b5e973,e868b3f8-9b6a-48b1-91c8-683d71d94f61" />  <!-- Comma separated list of Job Type GUIDs to process -->
