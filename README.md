@@ -56,23 +56,36 @@ To add this handler to KeyFactor:
 - Edit C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\web.config
 - Add the following new registration inside of <unity><container> along with the other <register ... /> items
 ```
-<register type="IOrchestratorJobCompleteHandler" mapTo="SampleExtensions.BaseJobCompletionHandler, keyfactor-jobcompletionhandler-base" name="BaseJobCompletionHandler">
-    <property name="JobTypes"       value="" />      <!-- A required comma delimited list of job type GUIDs that the handler is prepared to handle -->
-    <property name="FavoriteAnimal" value="Tiger" /> <!-- Sample parameter that the completion handler class has as a public property -->
+<register type="IOrchestratorJobCompleteHandler" mapTo="KFSample.SampleJobCompletionHandler, SampleJobCompletionHandler" name="SampleJobCompletionHandler">
+    <property name="JobTypes" value="" />            <!-- The value should include a valid GUID for the JobTypes you wish to execute this completion handler for -->
+    <property name="FavoriteAnimal" value="Tiger" /> <!-- Sample parameter to pass into the handler. This parameter must be a public property on the class -->
 </register>
 ```
 
-The compiled assembly **keyfactor-jobcompletionhandler-base.dll** goes in:
+The compiled assembly **SampleJobCompletionHandler.dll** goes in:
 - C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\bin 
     
-Important note: when copying over dependencies for the handler, it is important to not override existing DLLs in the target location. You will need to make sure that the handler references the same versions of libraries already in use in the WebAgentServices location. A compatibility list for library dependencies is in the works.
+For this sample only the above DLL needs to be copied to the target system.
+
+In cases where your code may need additional dependent assemblies, make sure to only copy assemblies that are specific to your handler. 
+Do not overwrite DLLs that ship with the Command platform. 
+You will need to make sure that the handler references the same versions of libraries already in use in the WebAgentServices location.
+A compatibility list for library dependencies is in the works.
 
 This Unity registration will require that the web server is restarted, which can be done when safe by running iisreset in a command console. The Agent API server should be checked at this point as errors in the handler registration can prevent other Keyfactor Orchestrators from communicating with the platform.
-    
-Adding the following to the KF Nlog config in the <Rules> section will output at trace the registration related information
-- Usually located at C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\NLog_Orchestrators.config
-```
-<logger name="*.BaseJobCompletionHandler" minlevel="Trace" writeTo="logfile" final="true"/>
-```
+
+To be able to see the trace log messages in the sample without having to enable trace level logging for the whole 
+Orchestrator API endpoint, find the nlog config file for the Orchestrator API endpoint, usually located at:
+
+`C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\NLog_Orchestrators.config`
+
+and add the following rule inside the `<Rules>` section:
+
+`<logger name="*.SampleJobCompletionHandler" minlevel="Trace" writeTo="logfile" final="true"/>`
+
+just before the default logging rule:
+
+ `<logger name="*" minlevel="Info" writeTo="logfile" />`
+
 # Summary
 This document has provided us a framework necessary to create a Job Completion Handler for any specific job type.  Information was provided for using the Keyfactor APIs to find the correct GUIDs to process specific job types.  The framework also provided examples for handling Inventory, Management and Reenrollment jobs, along with how to access the context properties and a working HTTP Client.  Once the handler has been developed, instructions were provided describing how to add the handler to the Unity container so Keyfactor Command can call the appropriate handler.  For additional information, please refer to the comments in the example source code.
