@@ -10,15 +10,12 @@
 // License. 
 */
 
-using Keyfactor.Platform.Extensions;
 using Keyfactor.Logging;
+using Keyfactor.Platform.Extensions;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Threading.Tasks;
-
-using System.Reflection.Emit;
 using System.Net.Http;
-using System.Diagnostics;
+using System.Threading.Tasks;
 
 //
 // This Sample Orchestrator Job Completion Handler demonstrates how to execute specialized code for the following jobs:
@@ -126,7 +123,7 @@ namespace SampleExtensions
         {
             Task<bool> RunHandlerResult = Task.Run<bool>(async () => await AsyncRunHandler(context));
             return RunHandlerResult.Result;
-        } // RunHandler
+        }
 
 
         // Async entry point
@@ -145,51 +142,48 @@ namespace SampleExtensions
 
             Logger.LogTrace($"Entering Job Completion Handler for orchestrator = [{context.AgentId}/{context.ClientMachine}] and JobType = {context.JobType}");
             Logger.LogTrace($"This handler's favorite animal is: {FavoriteAnimal}");
-            Logger.LogTrace($"The context passed is: \r\n[\r\n{ParseContext(context)}\r\n]");       // This logs the entire context to the log file
-
+            Logger.LogTrace($"The context passed is: \r\n[\r\n{ParseContext(context)}\r\n]");
 
             switch (context.JobType)
             {
                 // Example of linking to the various job types & executing it.
                 // NOTE: The assumption is if we are going to do some REST API calls, so we should be performing async operations
                 case Inventory:
-                    Logger.LogTrace($"Performing job completion handler for the Inventory job on orchestrator [{context.AgentId}/{context.ClientMachine}]");
-                    bResult = await Task.Run(() => executeInventoryHandler(context));
+                    Logger.LogTrace($"Dispatching job completion handler for an Inventory job {context.JobId}");
+                    bResult = await Task.Run(() => InventoryHandler(context));
                     break;
                 case Management:
-                    Logger.LogTrace($"Performing job completion handler for the Management job on orchestrator [{context.AgentId}/{context.ClientMachine}]");
-                    bResult = await Task.Run(() => executeManagementHandler(context));
+                    Logger.LogTrace($"Dispatching job completion handler for a Management job {context.JobId}");
+                    bResult = await Task.Run(() => ManagementHandler(context));
                     break;
                 case Reenrollment:
-                    Logger.LogTrace($"Performing job completion handler for the re-enrollment job on orchestrator [{context.AgentId}/{context.ClientMachine}]");
-                    bResult = await Task.Run(() => executeReenrollmentHandler(context));
+                    Logger.LogTrace($"Dispatching job completion handler for the re-enrollment job {context.JobId}");
+                    bResult = await Task.Run(() => ReenrollmentHandler(context));
                     break;
                 default:
-                    Logger.LogTrace($"{context.JobType} is not implemented by the completion handler. It needs an implementation defined.");
+                    Logger.LogTrace($"{context.JobType} is not implemented by the completion handler. No action taken for job {context.JobId}");
                     break;
             }
+
+            Logger.LogTrace($"Exiting Job Completion Handler for orchestrator = [{context.AgentId}/{context.ClientMachine}] and JobType = {context.JobType} with status: {bResult}");
+
             return bResult;
-        } // RunHandler
+        }
+
         #endregion
 
         #region private methods
-        /// <summary>
-        /// Call this class to handle the details of running the Inventory handler
-        /// </summary>
-        /// <param name="context"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
-        private bool executeInventoryHandler(OrchestratorJobCompleteHandlerContext context)
+
+        // Handler for Inventory Jobs
+        private bool InventoryHandler(OrchestratorJobCompleteHandlerContext context)
         {
             bool bResult = false;
 
-            Logger.LogTrace($"Executing the Inventory handler and passing control to it for orchestrator [{context.AgentId}/{context.ClientMachine}]");
+            Logger.LogTrace($"Executing the Inventory handler");
 
             try
             {
-                // This is where you can create your own custom logic after the Inventory job has been completed.
-                Logger.LogTrace("The job completion handler for Inventory code would execute here.");
-
+                Logger.LogTrace($"Custom logic for Inventory completion handler here");
 
                 // It is a common use case that job completion handlers need to reach back into the Command API to
                 // perform various operations. For this purpose, the context object contains an initialized 
@@ -210,6 +204,8 @@ namespace SampleExtensions
                     // Command API Orchestrator Job History query
                     string query = $@"OrchestratorJobs/JobHistory?pq.queryString=JobID%20-eq%20%22{context.JobId}%22";
 
+                    Logger.LogTrace($"Querying Command API with: {query}");
+
                     // Execute the API call with the provided HTTPClient
                     Task<HttpResponseMessage> task = Task.Run<HttpResponseMessage>(async () => await context.Client.GetAsync(query));
                     string result = task.Result.Content.ReadAsStringAsync().Result;
@@ -217,7 +213,7 @@ namespace SampleExtensions
                     // Log out the results - normally some processing would be done on the results
                     Logger.LogTrace($"Results of JobHistory API: {result}");
 
-                    // If custom code completed successfully, change the result flag to True marking the handler as complete and successful.
+                    // Report success
                     bResult = true;
                 }
                 else
@@ -230,32 +226,40 @@ namespace SampleExtensions
             catch (Exception ex)
             {
                 Logger.LogError($"FAILURE in Inventory Handler for orchestrator [{context.AgentId}/{context.ClientMachine}] {ex.Message}");
-                throw new Exception($"FAILURE in Inventory Handler for orchestrator [{context.AgentId}/{context.ClientMachine}] {ex.Message}");
+                throw new Exception($"FAILURE in Inventory Handler for orchestrator [{context.AgentId}/{context.ClientMachine}]", ex);
             }
 
             return bResult;
 
-        } // executeInventoryHandler
+        }
 
-        /// <summary>
-        /// Call this class to handle the details of running the management handler
-        /// </summary>
-        /// <param name="context"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
-        private bool executeManagementHandler(OrchestratorJobCompleteHandlerContext context)
+        // Handler for Inventory Jobs
+        private bool ManagementHandler(OrchestratorJobCompleteHandlerContext context)
         {
             bool bResult = false;
 
-            Logger.LogTrace($"Executing the Management handler and passing control to it for orchestrator [{context.AgentId}/{context.ClientMachine}]");
+            Logger.LogTrace($"Executing the Management handler");
 
             try
             {
-                // The OperationType property for a management job supports multiple job types.
-                // Refer to Keyfactor.Orchestrators.Common.Enums.CertStoreOperationType for the complete list of operation types.
+                Logger.LogTrace($"Custom logic for Inventory completion handler here");
 
-                Logger.LogTrace($"This is where you could create custom for operation type: {context.OperationType}");
+                // Management jobs can have different operation types. See Keyfactor.Orchestrators.Common.Enums.CertStoreOperationType
+                // Note that the CertStoreOperationType enum covers operation types for all job types, so not all values
+                // can occur for inventory jobs.
 
+                switch (context.OperationType)
+                {
+                    case Keyfactor.Orchestrators.Common.Enums.CertStoreOperationType.Add:
+                        Logger.LogTrace($"Management job process for an Add operation");
+                        break;
+                    case Keyfactor.Orchestrators.Common.Enums.CertStoreOperationType.Remove:
+                        Logger.LogTrace($"Management job process for a Remove operation");
+                        break;
+                    default:
+                        Logger.LogTrace($"Management job process for operation type {context.OperationType}");
+                        break;
+                }
 
                 bResult = true;
 
@@ -268,19 +272,14 @@ namespace SampleExtensions
 
             return bResult;
 
-        } // executeManagementHandler
+        }
 
-        /// <summary>
-        /// Call the class that handles the details of running the reenrollment handler
-        /// </summary>
-        /// <param name="context"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
-        private bool executeReenrollmentHandler(OrchestratorJobCompleteHandlerContext context)
+        // Handler for Reenrollment Jobs
+        private bool ReenrollmentHandler(OrchestratorJobCompleteHandlerContext context)
         {
-            Logger.LogTrace($"Entered ReenrollmentHander handler for orchestrator [{context.AgentId}/{context.ClientMachine}]");
-
             bool bResult = false;
+
+            Logger.LogTrace($"Executing the Reenrollment handler");
 
             try
             {
@@ -295,7 +294,7 @@ namespace SampleExtensions
             }
 
             return bResult;
-        } // executeReenrollmentHandler
+        }
 
         /// <summary>
         /// Convert the context into something printable
@@ -323,7 +322,7 @@ namespace SampleExtensions
             result = string.Join(",\r\n", pairs);
 
             return result;
-        } // ParseContext
+        }
         #endregion
     }
 }
