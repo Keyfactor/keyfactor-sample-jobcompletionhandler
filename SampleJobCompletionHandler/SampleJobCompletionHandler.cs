@@ -33,7 +33,7 @@ using System.Threading.Tasks;
 
 /*
 <register type="IOrchestratorJobCompleteHandler" mapTo="KFSample.SampleJobCompletionHandler, SampleJobCompletionHandler" name="SampleJobCompletionHandler">
-    <property name="JobTypes" value="" />            <!-- The value should include a valid GUID for the JobTypes you wish to execute this completion handler for -->
+    <property name="JobTypes" value="" />            <!-- Comma separated list of Job Type GUIDs to process -->
     <property name="FavoriteAnimal" value="Tiger" /> <!-- Sample parameter to pass into the handler. This parameter must be a public property on the class -->
 </register>
 */
