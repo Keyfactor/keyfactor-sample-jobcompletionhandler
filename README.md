@@ -4,16 +4,16 @@
 
 The Keyfactor Command platform has an extension point that allows custom code to be executed after the completion
 of orchestrator jobs.
-This code is in the form of a .NET assembly that is installed Command server. 
-This code receives basic information about the job (orchestrator that executed the job, job type, job identification,
+This code is in the form of a .NET assembly that is installed on the Command server. 
+The extension receives basic information about the job (orchestrator that executed the job, job type, job identification,
 success or failure, etc.) and can perform whatever server-side job post-processing is desired.
 
-Typical use cases would be triggering external business workflow systems on success or failure of a orchestrator jobs.
+Typical use cases would be triggering external business workflow systems on success or failure of orchestrator jobs.
 
 This repository contains a sample job completion handler that traces out the job context information provided and
 demonstrates making an API call back into the Command platform.
 
-Job Completion Handlers were introduced in Command version 9.0, this sample has been tested with Command Version 10.3
+Job Completion Handlers were introduced in Command version 9.0. This sample has been tested with Command Version 10.3
 
 
 ## Getting Started
@@ -26,11 +26,11 @@ To use this sample you will need:
 - The "Windows Certificate" Universal Orchestrator Extension, installed into the Orchestrator Framework
 - The corresponding "WinCert" certificate store type configured on the Command instance
 - An instance of a "WinCert" certificate store with a scheduled inventory job
-- Visual Studio (or other development environment that can build a .NET C# Assembly)
+- Visual Studio (or other development environment that can build a .NET C# assembly)
 
 #### 1 - Get a Command environment up and running with an inventory job running on a certificate store
 
-Job completion handlers execute after an orchestrator job completes, so to play with completion handlers, you will need some
+Job completion handlers execute after an orchestrator job completes, so to play with completion handlers, you will need a
 job running on some orchestrator. Completion handlers are typically written to be specific to a job type and in the case
 of certificate store jobs, also specific to a certificate store type.
 This sample is specific to the "WinCert" certificate store type, which is used to manage certificates found in Local
@@ -80,8 +80,9 @@ all of the possible job types. The WinCert store implements the above three job 
 #### 3 - Build the sample extension
 
 Add Keyfactor's GitHub NuGet package repository to your list of Visual Studio NuGet package sources.
+The URL for the package source is `https://nuget.pkg.github.com/Keyfactor/index.json`.
 You will need to create a GitHub personal access token and use it to authenticate to the GitHub package source.
-[Instructions TBD]
+The package repository is public read but does require a GitHub login. 
 
 Use Visual Studio to build the solution file in this repository.
 
@@ -98,7 +99,7 @@ Command Server. This is typically `C:\Program Files\Keyfactor\Keyfactor Platform
     
 For this sample only the above DLL needs to be copied to the target system.
 
-In cases where your code may need additional dependent assemblies, make sure to only copy assemblies that are specific to your handler. 
+In cases where your custom code may need additional dependent assemblies, make sure to only copy assemblies that are specific to your handler. 
 Do not overwrite DLLs that ship with the Command platform. 
 You will need to make sure that the handler references the same versions of libraries already in use in the WebAgentServices location.
 
@@ -117,6 +118,12 @@ Use the job type GUIDs from your environment instead of the ones below.
     <property name="FavoriteAnimal" value="Tiger" /> <!-- Sample parameter to pass into the handler. This parameter must be a public property on the class -->
 </register>
 ```
+Command ships with a `SendEmailOrchestratorJobCompleteHandler` that sends emails on job completion.
+The registration for this handler is commented out, but is an easy thing to search for when locating where to 
+put the registration for this sample.
+
+Multiple completion handlers may be registered, and the same handler may be registered multiple times
+(presumably with different sets of JobTypes), but the Unity "name" value must be unique across all registrations.
 
 Note that a broken Unity registration or a registration that points to an assembly that cannot be loaded can prevent
 the Orchestrator API from operating and prevent all Orchestrators from contacting the platform. Be sure the check the
@@ -125,7 +132,7 @@ logs (see below) for proper operation any time the Unity registration or the cor
 #### 6 - Enable trace logging for the handler
 
 To be able to see the trace log messages in the sample without having to enable trace level logging for the whole 
-Orchestrator API endpoint, find the nlog config file for the Orchestrator API endpoint, usually located at:
+Orchestrator API endpoint, find the NLog configuration file for the Orchestrator API endpoint, usually located at:
 
 `C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\NLog_Orchestrators.config`
 
@@ -139,13 +146,10 @@ just before the default logging rule:
 
 #### 7 - Restart IIS
 
-This Unity registration will require that the web server is restarted, which can be done by running the iisreset command.
+Changes to Unity registration will require that the web server is restarted, which can be done by running the iisreset command.
 
 At this point trace messages should appear in the Orchestrator API endpoint logs whenever a WinCert store type job
 is completed by an orchestrator. By default the logs will be at `C:\Keyfactor\logs\Command_OrchestratorsAPI_Log.txt`
-
- *** Needs cleanup below ***
-
 
 # Understanding the Sample
 
@@ -158,9 +162,9 @@ For background information, orchestrator jobs are processed by Command as follow
 - A job is scheduled on the Command platform (and targeted at a specific Orchestrator).
 - Orchestrators periodically check in with the Command platform to see if there is any work requested. When they check in they receive a list of jobs and requested times to run those jobs.
 - When the orchestrator thinks it's time to do a job that it was asked to do, it asks the Command platform for the job details.
-- The Command platform provides the job details and the orchestrator executes the job.
+- The Command platform provides the job details and the Orchestrator executes the job.
 - The Orchestrator returns the results of the job and the completion status to the Command platform.
-- The Command platform stores any job related data (such as inventory results) and then records the completion status of the job
+- The Command platform stores any job related data (such as inventory results) and then records the completion status of the job.
 - The Command platform looks for any registered job completion handlers that match the job type and executes them.
 - (We are here)
 
@@ -193,9 +197,9 @@ is possible with the WinCert store type.
 All of the methods trace out control of flow and it should be clear as to where you could put your own logic.
 See below for sample trace output.
 
-The interface assemblies needed by the code are shipped with the Command platform and for developers are made available
-as NuGet packages on GitHub's package server (in the Keyfactor Organization). The sample uses the following Keyfactor
-specific packages: 
+The interface assemblies needed by the code are shipped with the Command platform and for developers are made publicly 
+available as NuGet packages on GitHub's package server (in the Keyfactor Organization). The sample uses the following
+Keyfactor specific packages: 
 - `Keyfactor.Logging`
 - `Keyfactor.Orchestrators.Common`
 - `Keyfactor.Platform.IOrchestratorJobCompleteHandler`
@@ -373,9 +377,9 @@ Client : https://command.boingy.com/KeyfactorAPI/
 </details>
 
 # Summary
-This document has provided a framework necessary to create a Job Completion Handler for a specific job type.
+This document has provided an example Job Completion Handler for a specific job type and can be extended to handle other job types.
 Information was provided for using the Keyfactor APIs to find the correct GUIDs to process specific job types.
-The framework also provided examples for handling Inventory, Management and Reenrollment jobs, along with how to access the context properties and a working HTTP Client.
+The sample also provides examples for handling Inventory, Management and Reenrollment jobs, along with how to access the context properties and a working HTTP Client.
 Once the handler has been developed, instructions were provided describing how to add the handler to the Unity container so Keyfactor Command can call the appropriate handler.
 For additional information, please refer to the comments in the example source code.
 
