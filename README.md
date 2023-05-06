@@ -85,6 +85,12 @@ You will need to create a GitHub personal access token and use it to authenticat
 
 Use Visual Studio to build the solution file in this repository.
 
+Note that this extension will need to be compiled with the same version of the .NET Framework as is the Command 
+instance it will be plugged into. For Keyfactor Command 10.3 and prior, you will need to target .NET Framework 4.7.2
+(which this solution does target).
+Future versions of Command are planed to be targeted with .NET Core and if this sample is built against future versions,
+the target framework may need to be updated.
+
 #### 4 - Copy the assembly to the Command Server
 
 Copy the compiled assembly (`SampleJobCompletionHandler.dll`) to bin folder for the Orchestrator API endpoint on the 
@@ -141,45 +147,235 @@ is completed by an orchestrator. By default the logs will be at `C:\Keyfactor\lo
  *** Needs cleanup below ***
 
 
-# Understanding the Code
-The source code does provide additional comments to help understand the code.
+# Understanding the Sample
 
-Job Completion Handlers can run for the following job types:
-1. Discovery
-2. Inventory
-3. Management
-4. Re-enrollment
+Examine the sample code for a detailed understanding of how the handler works, but a higher level overview is described here.
 
-This example completion handler shows the minimum to get you started. This is a framework for creating other JobCompletionHandlers.
+#### Orchestrator Job Flow
 
-The example application contains the class BaseJobCompletionHandler.cs which implements the IOrchestratorJobCompleteHandler.  The interface Implements a string property for the JobType GUIDs and a Boolean method RunHandler that includes the OrchestratorJobCompleteHandlerContext (context) object.
-You will use the context object containing various properties to complete your handler.
+For background information, orchestrator jobs are processed by Command as follows:
 
-The JobTypes property is a string of comma delimited GUIDs identifying which jobs this handler will be executed for. 
+- A job is scheduled on the Command platform (and targeted at a specific Orchestrator).
+- Orchestrators periodically check in with the Command platform to see if there is any work requested. When they check in they receive a list of jobs and requested times to run those jobs.
+- When the orchestrator thinks it's time to do a job that it was asked to do, it asks the Command platform for the job details.
+- The Command platform provides the job details and the orchestrator executes the job.
+- The Orchestrator returns the results of the job and the completion status to the Command platform.
+- The Command platform stores any job related data (such as inventory results) and then records the completion status of the job
+- The Command platform looks for any registered job completion handlers that match the job type and executes them.
+- (We are here)
+
+While this sample discusses jobs that are related to certificate store management, there are other kinds of jobs that
+ship with the platform and it is possible to create custom jobs. The same job flow works for all job types,
+including the completion handler step.
+
+#### RunHandler method
+
+The Completion Handler is a .NET class that implements the `IOrchestratorJobCompleteHandler` interface.
+The interface contains a single method with a signature of `bool RunHandler(OrchestratorJobCompleteHandlerContext context)`.
+The handler's responsibility is to look at the context object (see below),
+do whatever processing is necessary, and return a true or false success status.
+Since a single completion handler will typically manage multiple job types, the RunHandler method will usually have some
+sort of dispatch logic to figure out what kind of job has completed and call the appropriate logic for the job.
+
+Looking at the sample code, you will see an implementation of the RunHandler method, which relays control to an async
+version of the method, which in turn determines the job type and calls a job specific method.
+
+The method that handles inventory jobs demonstrates using data from the context object to make an API call back to the 
+Command platform to retrieve more information about the inventory job (in this case the history of previous job runs).
+Since the API call is an asynchronous call, the code shows how to transition from the synchronous RunHander interface.
+
+The method that handles management jobs demonstrates having a different code path based on the various operation types
+can occur with management jobs.
+
+Finally, the method that handles reenrollment jobs doesn't have any logic but shows handling the third kind of job that
+is possible with the WinCert store type.
+
+All of the methods trace out control of flow and it should be clear as to where you could put your own logic.
+See below for sample trace output.
+
+The interface assemblies needed by the code are shipped with the Command platform and for developers are made available
+as NuGet packages on GitHub's package server (in the Keyfactor Organization). The sample uses the following Keyfactor
+specific packages: 
+- `Keyfactor.Logging`
+- `Keyfactor.Orchestrators.Common`
+- `Keyfactor.Platform.IOrchestratorJobCompleteHandler`
+
+#### Context Object
+
+When the completion handler is executed, it is passed a context object that contains information about the job that just completed.
+Depending on the job type, various fields in the context object may or may not be present. The sample code traces out the
+contents of the context object.
+
+<details><summary>Sample Inventory Context</summary>
+
+```
+[
+AgentId : fa406103-d84a-43ea-8bfd-99bc1f064281,
+Username : BOINGY\CMS_Service,
+ClientMachine : COMMAND,
+JobResult : Success,
+JobId : 0b4b411a-4b26-4492-a575-a10adb43a08a,
+JobType : WinCertInventory,
+JobTypeId : 49b3a17d-cada-4ec8-84c6-7719bf5beef3,
+OperationType : Unknown,
+CertificateId : null,
+RequestTimestamp : 5/3/2023 11:18:48 PM,
+CurrentRetryCount : 0,
+Client : https://command.boingy.com/KeyfactorAPI/
+]
+```
+</summary>
+
+<details><summary>Sample Management Context</summary>
+
+```
+[
+AgentId : fa406103-d84a-43ea-8bfd-99bc1f064281,
+Username : BOINGY\CMS_Service,
+ClientMachine : COMMAND,
+JobResult : Success,
+JobId : 426ec1ab-9f02-4011-8df9-72c4a603ca90,
+JobType : WinCertManagement,
+JobTypeId : 4be14534-55b0-4cd7-9871-536b55b5e973,
+OperationType : Add,
+CertificateId : 14,
+RequestTimestamp : 5/6/2023 12:29:32 AM,
+CurrentRetryCount : 0,
+Client : https://command.boingy.com/KeyfactorAPI/
+]
+```
+</summary>
+
+<details><summary>Sample ReEnrollment Context</summary>
+
+```
+[
+AgentId : fa406103-d84a-43ea-8bfd-99bc1f064281,
+Username : BOINGY\CMS_Service,
+ClientMachine : COMMAND,
+JobResult : Success,
+JobId : 32354394-955e-4142-a968-479daa294128,
+JobType : WinCertReenrollment,
+JobTypeId : e868b3f8-9b6a-48b1-91c8-683d71d94f61,
+OperationType : Unknown,
+CertificateId : 15,
+RequestTimestamp : 5/6/2023 12:32:46 AM,
+CurrentRetryCount : 0,
+Client : https://command.boingy.com/KeyfactorAPI/
+]
+```
+</summary>
+
+The context fields provided are:
+
+| Field | Description |
+|-------|-------------|
+|AgentId | The GUID that identifies the Orchestrator that ran the job.|
+|Username | The account that the Orchestrator used to authorize itself to the Command platform. Displayed as "Identity" on the Orchestrator management screen|
+|ClientMachine | The name of the Orchestrator. This is typically a fully qualified domain name, but can be any string that the Orchestrator declared when it registered with the Command Platform|
+|JobResult | Result reported by Orchestrator. (Success, Warning, Failure, Unknown) |
+|JobId | These will be fixed for reoccurring jobs, such as inventory, and change for one time jobs |
+|JobType | String based Job type |
+|JobTypeId | GUID for job type. These will be unique per Command instance. These are the values that were configured in the JobTypes Unity configuration|
+|OperationType | Some job types have multiple operations. While inventory jobs report "Unknown", management jobs can report "Add" and "Remove" |
+|CertificateID | The internal Command Id for the certificate related to the job. Useful for knowing which certificate was added, remove, or enrolled |
+|RequestTimestamp | When the job was originally scheduled |
+|CurrentRetryCount | Failed jobs are automatically retried (rescheduled) by the Command platform. This will be zero on the first execution of the job and increment for each retry. |
+|Client | The context contains an initialized HTTPClient which is appropriate for making calls to the Command API|
+
+#### Sample Trace Outputs
 
 
+<details><summary>Sample Inventory Handler Trace</summary>
 
-Once Keyfactor Command determines the JobType exists, the `RunHander` method will get called, passing the `OrchestratorJobCompletionHandlerContext` object which contains various property information and HTTP client you can use throughout your handler.  
-The context object also contains a JobType property that contains the name of the Store Type Capability.  The JobType is a string concatination of the cert store short name and the job capability.  For example, the cert store name of WinCert that performs a reenrollment, the JobType property would contain the string WinCertReenrollment.  Most common job types include:
-- Discovery
-- Inventory
-- Management
-- Reenrollment
+```
+2023-05-05 17:30:00.3527 E014A91C-90BA-46C8-B185-9F9290993C69 KFSample.SampleJobCompletionHandler [Trace] - This handler's favorite animal is: Tiger
+2023-05-05 17:30:00.3527 E014A91C-90BA-46C8-B185-9F9290993C69 KFSample.SampleJobCompletionHandler [Trace] - The context passed is: 
+[
+AgentId : fa406103-d84a-43ea-8bfd-99bc1f064281,
+Username : BOINGY\CMS_Service,
+ClientMachine : COMMAND,
+JobResult : Success,
+JobId : 0b4b411a-4b26-4492-a575-a10adb43a08a,
+JobType : WinCertInventory,
+JobTypeId : 49b3a17d-cada-4ec8-84c6-7719bf5beef3,
+OperationType : Unknown,
+CertificateId : null,
+RequestTimestamp : 5/3/2023 11:18:48 PM,
+CurrentRetryCount : 0,
+Client : https://command.boingy.com/KeyfactorAPI/
+]
+2023-05-05 17:30:00.3527 E014A91C-90BA-46C8-B185-9F9290993C69 KFSample.SampleJobCompletionHandler [Trace] - Dispatching job completion handler for an Inventory job 0b4b411a-4b26-4492-a575-a10adb43a08a
+2023-05-05 17:30:00.3527 E014A91C-90BA-46C8-B185-9F9290993C69 KFSample.SampleJobCompletionHandler [Trace] - Executing the Inventory handler
+2023-05-05 17:30:00.3527 E014A91C-90BA-46C8-B185-9F9290993C69 KFSample.SampleJobCompletionHandler [Trace] - Custom logic for Inventory completion handler here
+2023-05-05 17:30:00.3527 E014A91C-90BA-46C8-B185-9F9290993C69 KFSample.SampleJobCompletionHandler [Trace] - Querying Command API with: OrchestratorJobs/JobHistory?pq.queryString=JobID%20-eq%20%220b4b411a-4b26-4492-a575-a10adb43a08a%22
+2023-05-05 17:30:00.3683 E014A91C-90BA-46C8-B185-9F9290993C69 KFSample.SampleJobCompletionHandler [Trace] - Results of JobHistory API: [{"JobHistoryId":2168,"AgentMachine":"COMMAND","JobId":"0b4b411a-4b26-4492-a575-a10adb43a08a","Schedule":{"Interval":{"Minutes":1}},"JobType":"WinCertInventory","OperationStart":"2023-05-06T00:27:00","OperationEnd":"2023-05-06T00:27:00","Message":"","Result":"Success","Status":"Completed","StorePath":"My","ClientMachine":"iistarget.boingy.com"},{"JobHistoryId":2169,"AgentMachine":"COMMAND","JobId":"0b4b411a-4b26-4492-a575-a10adb43a08a","Schedule":{"Interval":{"Minutes":1}},"JobType":"WinCertInventory","OperationStart":"2023-05-06T00:28:00","OperationEnd":"2023-05-06T00:28:00","Message":"","Result":"Success","Status":"Completed","StorePath":"My","ClientMachine":"iistarget.boingy.com"},{"JobHistoryId":2170,"AgentMachine":"COMMAND","JobId":"0b4b411a-4b26-4492-a575-a10adb43a08a","Schedule":{"Interval":{"Minutes":1}},"JobType":"WinCertInventory","OperationStart":"2023-05-06T00:29:00","OperationEnd":"2023-05-06T00:29:00","Message":"","Result":"Success","Status":"Completed","StorePath":"My","ClientMachine":"iistarget.boingy.com"},{"JobHistoryId":2171,"AgentMachine":"COMMAND","JobId":"0b4b411a-4b26-4492-a575-a10adb43a08a","Schedule":{"Interval":{"Minutes":1}},"JobType":"WinCertInventory","OperationStart":"2023-05-06T00:30:00","OperationEnd":null,"Message":"","Result":"Unknown","Status":"InProcess","StorePath":"My","ClientMachine":"iistarget.boingy.com"}]
+2023-05-05 17:30:00.3844 E014A91C-90BA-46C8-B185-9F9290993C69 KFSample.SampleJobCompletionHandler [Trace] - Exiting Job Completion Handler for orchestrator [fa406103-d84a-43ea-8bfd-99bc1f064281/COMMAND] and JobType 'WinCertInventory' with status: True
 
+```
+</details>
 
+<details><summary>Sample Management Handler Trace</summary>
 
+```
+2023-05-05 17:30:30.0244 F1CF5BD5-3148-47B5-A24D-5A81F21C86CA KFSample.SampleJobCompletionHandler [Trace] - Entering Job Completion Handler for orchestrator [fa406103-d84a-43ea-8bfd-99bc1f064281/COMMAND] and JobType 'WinCertManagement'
+2023-05-05 17:30:30.0244 F1CF5BD5-3148-47B5-A24D-5A81F21C86CA KFSample.SampleJobCompletionHandler [Trace] - This handler's favorite animal is: Tiger
+2023-05-05 17:30:30.0244 F1CF5BD5-3148-47B5-A24D-5A81F21C86CA KFSample.SampleJobCompletionHandler [Trace] - The context passed is: 
+[
+AgentId : fa406103-d84a-43ea-8bfd-99bc1f064281,
+Username : BOINGY\CMS_Service,
+ClientMachine : COMMAND,
+JobResult : Success,
+JobId : 426ec1ab-9f02-4011-8df9-72c4a603ca90,
+JobType : WinCertManagement,
+JobTypeId : 4be14534-55b0-4cd7-9871-536b55b5e973,
+OperationType : Add,
+CertificateId : 14,
+RequestTimestamp : 5/6/2023 12:29:32 AM,
+CurrentRetryCount : 0,
+Client : https://command.boingy.com/KeyfactorAPI/
+]
+2023-05-05 17:30:30.0244 F1CF5BD5-3148-47B5-A24D-5A81F21C86CA KFSample.SampleJobCompletionHandler [Trace] - Dispatching job completion handler for a Management job 426ec1ab-9f02-4011-8df9-72c4a603ca90
+2023-05-05 17:30:30.0244 F1CF5BD5-3148-47B5-A24D-5A81F21C86CA KFSample.SampleJobCompletionHandler [Trace] - Executing the Management handler
+2023-05-05 17:30:30.0244 F1CF5BD5-3148-47B5-A24D-5A81F21C86CA KFSample.SampleJobCompletionHandler [Trace] - Custom logic for Inventory completion handler here
+2023-05-05 17:30:30.0244 F1CF5BD5-3148-47B5-A24D-5A81F21C86CA KFSample.SampleJobCompletionHandler [Trace] - Management job process for an Add operation
+2023-05-05 17:30:30.0244 F1CF5BD5-3148-47B5-A24D-5A81F21C86CA KFSample.SampleJobCompletionHandler [Trace] - Exiting Job Completion Handler for orchestrator [fa406103-d84a-43ea-8bfd-99bc1f064281/COMMAND] and JobType 'WinCertManagement' with status: True
+
+```
+</details>
+
+<details><summary>Sample ReEnrollment Handler Trace</summary>
+
+```
+2023-05-05 17:33:31.7903 F81ECB91-496C-4C66-8B66-C2BA4C6CE9F5 KFSample.SampleJobCompletionHandler [Trace] - Entering Job Completion Handler for orchestrator [fa406103-d84a-43ea-8bfd-99bc1f064281/COMMAND] and JobType 'WinCertReenrollment'
+2023-05-05 17:33:31.7903 F81ECB91-496C-4C66-8B66-C2BA4C6CE9F5 KFSample.SampleJobCompletionHandler [Trace] - This handler's favorite animal is: Tiger
+2023-05-05 17:33:31.7903 F81ECB91-496C-4C66-8B66-C2BA4C6CE9F5 KFSample.SampleJobCompletionHandler [Trace] - The context passed is: 
+[
+AgentId : fa406103-d84a-43ea-8bfd-99bc1f064281,
+Username : BOINGY\CMS_Service,
+ClientMachine : COMMAND,
+JobResult : Success,
+JobId : 32354394-955e-4142-a968-479daa294128,
+JobType : WinCertReenrollment,
+JobTypeId : e868b3f8-9b6a-48b1-91c8-683d71d94f61,
+OperationType : Unknown,
+CertificateId : 15,
+RequestTimestamp : 5/6/2023 12:32:46 AM,
+CurrentRetryCount : 0,
+Client : https://command.boingy.com/KeyfactorAPI/
+]
+2023-05-05 17:33:31.7903 F81ECB91-496C-4C66-8B66-C2BA4C6CE9F5 KFSample.SampleJobCompletionHandler [Trace] - Dispatching job completion handler for the re-enrollment job 32354394-955e-4142-a968-479daa294128
+2023-05-05 17:33:31.7903 F81ECB91-496C-4C66-8B66-C2BA4C6CE9F5 KFSample.SampleJobCompletionHandler [Trace] - Executing the Reenrollment handler
+2023-05-05 17:33:31.7903 F81ECB91-496C-4C66-8B66-C2BA4C6CE9F5 KFSample.SampleJobCompletionHandler [Trace] - Custom logic for Reenrollment completion handler here
+2023-05-05 17:33:31.7903 F81ECB91-496C-4C66-8B66-C2BA4C6CE9F5 KFSample.SampleJobCompletionHandler [Trace] - Exiting Job Completion Handler for orchestrator [fa406103-d84a-43ea-8bfd-99bc1f064281/COMMAND] and JobType 'WinCertReenrollment' with status: True
+
+```
+</details>
 
 # Summary
-This document has provided us a framework necessary to create a Job Completion Handler for any specific job type.  Information was provided for using the Keyfactor APIs to find the correct GUIDs to process specific job types.  The framework also provided examples for handling Inventory, Management and Reenrollment jobs, along with how to access the context properties and a working HTTP Client.  Once the handler has been developed, instructions were provided describing how to add the handler to the Unity container so Keyfactor Command can call the appropriate handler.  For additional information, please refer to the comments in the example source code.
-
-
-Left over text
-
-
-Users can create a completion handler from scratch by performing the following:
-- Create a new C# class library solution (.dll) project using the classic .Net Framework 4.7 or later (not .NET Core)
-- Add the Keyfactor.Platform.Extensions.IOrchestratorJobCompletionHandler nuget package to the project
-- Create a class that implements the IOrchestratorJobCompleteHandler interface.  The contents of the RunHandler function should be the implementation of your job.  You have available to you the OrchestratorJobCompleteHandlerContext object which contains various information about the completed job.
-
-From there you may follow along with this documentation to build your custom handler.  This document describes how to create a custom job completion handler by using the existing template and code you can download from this repo.  
+This document has provided a framework necessary to create a Job Completion Handler for a specific job type.
+Information was provided for using the Keyfactor APIs to find the correct GUIDs to process specific job types.
+The framework also provided examples for handling Inventory, Management and Reenrollment jobs, along with how to access the context properties and a working HTTP Client.
+Once the handler has been developed, instructions were provided describing how to add the handler to the Unity container so Keyfactor Command can call the appropriate handler.
+For additional information, please refer to the comments in the example source code.
 

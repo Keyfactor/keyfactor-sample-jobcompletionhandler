@@ -17,20 +17,33 @@ using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-//
-// This Sample Orchestrator Job Completion Handler demonstrates how to execute specialized code for the following jobs:
-//    1) Inventory
-//    2) Management
-//    3) Re-enrollment
-//
-// A discovery job also has the ability to run a completion handler.
-//
-// To add this handler to KeyFactor:
-//
-// Edit C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\web.config on the IIS server
-//
-// and add the following new registration inside of <unity><container> along with the other <register ... /> items
+// This is a sample implementation of the Keyfactor Command Orchestrator Job Completion Handler. 
+// This code can be run after either successful or failed completion of an orchestrator job and
+// can be used to implement whatever server side post-processing is desired. Typically handlers
+// are used to trigger workflow in systems external to Keyfactor Command.
 
+// This is sample code only and not intended or supported for production use.
+
+// This sample is intended to be used alongside the Windows Certificate "WinCert" extension which
+// can be found at: https://github.com/Keyfactor/iis-orchestrator.
+
+// This sample implements handlers for WinCert Inventory, Management, and Reenrollment jobs.
+// The Inventory handler demonstrates making an API call back into command.
+// This sample doesn't generate any side effects when it runs, other that logging out messages, but can be
+// used to demonstrate how custom handler code could be used.
+
+// See the accompanying readme.md for prerequisites and other instructions for installation. 
+//
+// The TLDR; is that you need a working Keyfactor Command instance that is configured with scheduled
+// inventory job on a WinCert store type. This assembly needs to be compiled and registered on the 
+// Command instance, and the deployment specific GUIDs for the WinCert store jobs need to be configured
+// in the Unity registration. 
+//
+// The compiled assembly SampleJobCompletionHandler.dll goes in C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\bin
+//
+// The web.config Orchestrator API normally at C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\web.config
+// on the Command (IIS) server needs to have the following Unity registration added (with the job type GUIDs) specified.
+//
 /*
 <register type="IOrchestratorJobCompleteHandler" mapTo="KFSample.SampleJobCompletionHandler, SampleJobCompletionHandler" name="SampleJobCompletionHandler">
     <property name="JobTypes" value="" />            <!-- Comma separated list of Job Type GUIDs to process -->
@@ -38,13 +51,15 @@ using System.Threading.Tasks;
 </register>
 */
 //
-// The compiled assembly SampleJobCompletionHandler.dll goes in C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\bin 
-
-// Adding the following to the KF Nlog config in the <Rules> section will output at trace the registration related information
-// Usually located at C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\NLog_Orchestrators.config
+// Adding a rule to the NLog configuration which traces output from this code can be helpful. The NLog configuration
+// is normally at C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\NLog_Orchestrators.config. The 
+// following rule 
 /*
 <logger name="*.SampleJobCompletionHandler" minlevel="Trace" writeTo="logfile" final="true"/>
 */
+// should be added in the rules section just before the default logging rule (<logger name="*" minlevel="Info" writeTo="logfile" />)
+
+
 namespace KFSample
 {
     public class SampleJobCompletionHandler : IOrchestratorJobCompleteHandler
@@ -86,7 +101,7 @@ namespace KFSample
         // if the logic in the handler should operate in production or test mode; or to configure external API 
         // addresses or credentials needed to talk to external systems.
         //
-        // In this sample we will log out the parameter passed in.
+        // In this sample we will simply log out the parameter passed in.
 
         public string FavoriteAnimal { get; set; }
 
@@ -115,7 +130,7 @@ namespace KFSample
         // the RunHandler method is called and passed a context object containing the details of the job that has
         // completed. It is up to the code in the handler to perform whatever custom processing is desired.
         //
-        // Note that this method is a synchronous function call. It is not a task and should not be defined
+        // Note that the RunHandler method is a synchronous function call. It is not a task and should not be defined
         // as async. Because this sample demonstrates making async calls to the Command API, we need to transition
         // from synchronous to asynchronous - this is done by wrapping our dispatch call in a Task.Run
 
@@ -124,7 +139,6 @@ namespace KFSample
             Task<bool> RunHandlerResult = Task.Run<bool>(async () => await AsyncRunHandler(context));
             return RunHandlerResult.Result;
         }
-
 
         // Async entry point
 
@@ -136,46 +150,49 @@ namespace KFSample
 
             if (null == context)
             {
-                Logger.LogError($"Error!  The context passed to the Job Handler is null");
-                return bResult;
+                Logger.LogError($"A null context object was passed to the job completion handler");
+                return false;
             }
 
-            Logger.LogTrace($"Entering Job Completion Handler for orchestrator = [{context.AgentId}/{context.ClientMachine}] and JobType = {context.JobType}");
+            Logger.LogTrace($"Entering Job Completion Handler for orchestrator [{context.AgentId}/{context.ClientMachine}] and JobType '{context.JobType}'");
             Logger.LogTrace($"This handler's favorite animal is: {FavoriteAnimal}");
             Logger.LogTrace($"The context passed is: \r\n[\r\n{ParseContext(context)}\r\n]");
 
+            // Depending on the job type, call the appropriate handler. We switch on the job name constants
+            // define above.
+
             switch (context.JobType)
             {
-                // Example of linking to the various job types & executing it.
-                // NOTE: The assumption is if we are going to do some REST API calls, so we should be performing async operations
                 case Inventory:
                     Logger.LogTrace($"Dispatching job completion handler for an Inventory job {context.JobId}");
-                    bResult = await Task.Run(() => InventoryHandler(context));
+                    bResult = await InventoryHandler(context); // Inventory handler makes use of an async HTTPClient, so we await it
                     break;
                 case Management:
                     Logger.LogTrace($"Dispatching job completion handler for a Management job {context.JobId}");
-                    bResult = await Task.Run(() => ManagementHandler(context));
+                    bResult = ManagementHandler(context); // Management handler is synchronous, we just call it
                     break;
                 case Reenrollment:
                     Logger.LogTrace($"Dispatching job completion handler for the re-enrollment job {context.JobId}");
-                    bResult = await Task.Run(() => ReenrollmentHandler(context));
+                    bResult = ReenrollmentHandler(context); // Reenrollment handler is synchronous, we just call it
                     break;
                 default:
                     Logger.LogTrace($"{context.JobType} is not implemented by the completion handler. No action taken for job {context.JobId}");
                     break;
             }
 
-            Logger.LogTrace($"Exiting Job Completion Handler for orchestrator = [{context.AgentId}/{context.ClientMachine}] and JobType = {context.JobType} with status: {bResult}");
+            Logger.LogTrace($"Exiting Job Completion Handler for orchestrator [{context.AgentId}/{context.ClientMachine}] and JobType '{context.JobType}' with status: {bResult}");
 
+            // Inform Command if the we think the handler was successful.
+            // As of Command 10.3, declared failures are logged at a debug level. Backlog has been entered to treat these as warnings.
             return bResult;
         }
 
         #endregion
 
-        #region private methods
+        #region Handler Methods
 
         // Handler for Inventory Jobs
-        private bool InventoryHandler(OrchestratorJobCompleteHandlerContext context)
+        private async Task<bool> InventoryHandler(OrchestratorJobCompleteHandlerContext context)
         {
             bool bResult = false;
 
@@ -206,9 +223,19 @@ namespace KFSample
 
                     Logger.LogTrace($"Querying Command API with: {query}");
 
-                    // Execute the API call with the provided HTTPClient
-                    Task<HttpResponseMessage> task = Task.Run<HttpResponseMessage>(async () => await context.Client.GetAsync(query));
-                    string result = task.Result.Content.ReadAsStringAsync().Result;
+                    HttpResponseMessage response = await context.Client.GetAsync(query);
+
+                    try
+                    {
+                        response.EnsureSuccessStatusCode();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError($"Could not query Command API: {LogHandler.FlattenException(ex)}");
+                        return false;
+                    }
+
+                    string result = await response.Content.ReadAsStringAsync();
 
                     // Log out the results - normally some processing would be done on the results
                     Logger.LogTrace($"Results of JobHistory API: {result}");
@@ -218,19 +245,19 @@ namespace KFSample
                 }
                 else
                 {
+                    // For errors we understand or expect, we should log and return a false status
                     Logger.LogError($"No HttpClient supplied in the context for orchestrator [{context.AgentId}/{context.ClientMachine}]");
-                    throw new Exception($"No HttpClient supplied in the context for orchestrator [{context.AgentId}/{context.ClientMachine}]");
+                    return false;
                 }
 
             }
             catch (Exception ex)
             {
-                Logger.LogError($"FAILURE in Inventory Handler for orchestrator [{context.AgentId}/{context.ClientMachine}] {ex.Message}");
+                // Errors we don't understand can be re-thrown and wrapped in an exception so the stack trace is not lost. Command will log these.
                 throw new Exception($"FAILURE in Inventory Handler for orchestrator [{context.AgentId}/{context.ClientMachine}]", ex);
             }
 
             return bResult;
-
         }
 
         // Handler for Inventory Jobs
@@ -245,7 +272,7 @@ namespace KFSample
                 Logger.LogTrace($"Custom logic for Inventory completion handler here");
 
                 // Management jobs can have different operation types. See Keyfactor.Orchestrators.Common.Enums.CertStoreOperationType
-                // Note that the CertStoreOperationType enum covers operation types for all job types, so not all values
+                // Note that the CertStoreOperationType enum contains operation types for all job types, so not all values
                 // can occur for inventory jobs.
 
                 switch (context.OperationType)
@@ -266,12 +293,11 @@ namespace KFSample
             }
             catch (Exception ex)
             {
-                Logger.LogError($"FAILURE in Management Handler for orchestrator [{context.AgentId}/{context.ClientMachine}] {ex.Message}");
-                throw new Exception($"FAILURE in Management Handler for orchestrator [{context.AgentId}/{context.ClientMachine}] {ex.Message}");
+                // Errors we don't understand can be re-thrown and wrapped in an exception so the stack trace is not lost. Command will log these.
+                throw new Exception($"FAILURE in Management Handler for orchestrator [{context.AgentId}/{context.ClientMachine}] {ex.Message}", ex);
             }
 
             return bResult;
-
         }
 
         // Handler for Reenrollment Jobs
@@ -289,8 +315,8 @@ namespace KFSample
             }
             catch (Exception ex)
             {
-                Logger.LogError($"FAILURE in Reenrollment Handler for orchestrator [{context.AgentId}/{context.ClientMachine}] {ex.Message}");
-                throw new Exception($"FAILURE in Reenrollment Handler for orchestrator [{context.AgentId}/{context.ClientMachine}] {ex.Message}");
+                // Errors we don't understand can be re-thrown and wrapped in an exception so the stack trace is not lost. Command will log these.
+                throw new Exception($"FAILURE in Reenrollment Handler for orchestrator [{context.AgentId}/{context.ClientMachine}] {ex.Message}", ex);
             }
 
             return bResult;
