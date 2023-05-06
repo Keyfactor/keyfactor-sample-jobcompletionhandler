@@ -224,7 +224,7 @@ CurrentRetryCount : 0,
 Client : https://command.boingy.com/KeyfactorAPI/
 ]
 ```
-</summary>
+</details>
 
 <details><summary>Sample Management Context</summary>
 
@@ -244,7 +244,7 @@ CurrentRetryCount : 0,
 Client : https://command.boingy.com/KeyfactorAPI/
 ]
 ```
-</summary>
+</details>
 
 <details><summary>Sample ReEnrollment Context</summary>
 
@@ -264,7 +264,7 @@ CurrentRetryCount : 0,
 Client : https://command.boingy.com/KeyfactorAPI/
 ]
 ```
-</summary>
+</details>
 
 The context fields provided are:
 
