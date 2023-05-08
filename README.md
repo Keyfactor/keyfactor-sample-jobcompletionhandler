@@ -61,9 +61,10 @@ Using the Keyfactor API Reference and Utility, scroll down to the *CertificateSt
 GET /CertificateStoreTypes/Name/{name} end point.
 Enter "WinCert" the name parameter and click the `Try it out!` button to execute the API.
 
-Alternatively, you could execute the following curl command:
+Alternatively, you could use a curl command similar to the following (after substituting your credentials and specifying 
+the proper URL for your Command Server API endpoint:
 
-`curl -X GET --header 'Accept: application/json' --header 'x-keyfactor-api-version: 1' --header 'x-keyfactor-requested-with: APIClient' 'https://{server}/Keyfactor/API/CertificateStoreTypes/Name/WinCert'`
+`curl -u {domain}\\{account}:{password}  'https://{commandserver}/KeyfactorAPI/CertificateStoreTypes/Name/WinCert'`
 
 Once the response is returned, scroll down to the end of the JSON result.
 You will see a list of Job Types and their associated GUIDs which will look something like:
@@ -215,8 +216,8 @@ contents of the context object.
 ```
 [
 AgentId : fa406103-d84a-43ea-8bfd-99bc1f064281,
-Username : BOINGY\CMS_Service,
-ClientMachine : COMMAND,
+Username : KFTRAIN\SVC_Orchestrator,
+ClientMachine : orchestrator.kftrain.lab,
 JobResult : Success,
 JobId : 0b4b411a-4b26-4492-a575-a10adb43a08a,
 JobType : WinCertInventory,
@@ -225,7 +226,7 @@ OperationType : Unknown,
 CertificateId : null,
 RequestTimestamp : 5/3/2023 11:18:48 PM,
 CurrentRetryCount : 0,
-Client : https://command.boingy.com/KeyfactorAPI/
+Client : https://command.kftrain.lab/KeyfactorAPI/
 ]
 ```
 </details>
@@ -235,8 +236,8 @@ Client : https://command.boingy.com/KeyfactorAPI/
 ```
 [
 AgentId : fa406103-d84a-43ea-8bfd-99bc1f064281,
-Username : BOINGY\CMS_Service,
-ClientMachine : COMMAND,
+Username : KFTRAIN\SVC_Orchestrator,
+ClientMachine : orchestrator.kftrain.lab,
 JobResult : Success,
 JobId : 426ec1ab-9f02-4011-8df9-72c4a603ca90,
 JobType : WinCertManagement,
@@ -245,7 +246,7 @@ OperationType : Add,
 CertificateId : 14,
 RequestTimestamp : 5/6/2023 12:29:32 AM,
 CurrentRetryCount : 0,
-Client : https://command.boingy.com/KeyfactorAPI/
+Client : https://command.kftrain.lab/KeyfactorAPI/
 ]
 ```
 </details>
@@ -255,8 +256,8 @@ Client : https://command.boingy.com/KeyfactorAPI/
 ```
 [
 AgentId : fa406103-d84a-43ea-8bfd-99bc1f064281,
-Username : BOINGY\CMS_Service,
-ClientMachine : COMMAND,
+Username : KFTRAIN\SVC_Orchestrator,
+ClientMachine : orchestrator.kftrain.lab,
 JobResult : Success,
 JobId : 32354394-955e-4142-a968-479daa294128,
 JobType : WinCertReenrollment,
@@ -265,7 +266,7 @@ OperationType : Unknown,
 CertificateId : 15,
 RequestTimestamp : 5/6/2023 12:32:46 AM,
 CurrentRetryCount : 0,
-Client : https://command.boingy.com/KeyfactorAPI/
+Client : https://command.kftrain.lab/KeyfactorAPI/
 ]
 ```
 </details>
@@ -297,8 +298,8 @@ The context fields provided are:
 2023-05-05 17:30:00.3527 E014A91C-90BA-46C8-B185-9F9290993C69 KFSample.SampleJobCompletionHandler [Trace] - The context passed is: 
 [
 AgentId : fa406103-d84a-43ea-8bfd-99bc1f064281,
-Username : BOINGY\CMS_Service,
-ClientMachine : COMMAND,
+Username : KFTRAIN\SVC_Orchestrator,
+ClientMachine : orchestrator.kftrain.lab,
 JobResult : Success,
 JobId : 0b4b411a-4b26-4492-a575-a10adb43a08a,
 JobType : WinCertInventory,
@@ -307,14 +308,14 @@ OperationType : Unknown,
 CertificateId : null,
 RequestTimestamp : 5/3/2023 11:18:48 PM,
 CurrentRetryCount : 0,
-Client : https://command.boingy.com/KeyfactorAPI/
+Client : https://command.kftrain.lab/KeyfactorAPI/
 ]
 2023-05-05 17:30:00.3527 E014A91C-90BA-46C8-B185-9F9290993C69 KFSample.SampleJobCompletionHandler [Trace] - Dispatching job completion handler for an Inventory job 0b4b411a-4b26-4492-a575-a10adb43a08a
 2023-05-05 17:30:00.3527 E014A91C-90BA-46C8-B185-9F9290993C69 KFSample.SampleJobCompletionHandler [Trace] - Executing the Inventory handler
 2023-05-05 17:30:00.3527 E014A91C-90BA-46C8-B185-9F9290993C69 KFSample.SampleJobCompletionHandler [Trace] - Custom logic for Inventory completion handler here
 2023-05-05 17:30:00.3527 E014A91C-90BA-46C8-B185-9F9290993C69 KFSample.SampleJobCompletionHandler [Trace] - Querying Command API with: OrchestratorJobs/JobHistory?pq.queryString=JobID%20-eq%20%220b4b411a-4b26-4492-a575-a10adb43a08a%22
-2023-05-05 17:30:00.3683 E014A91C-90BA-46C8-B185-9F9290993C69 KFSample.SampleJobCompletionHandler [Trace] - Results of JobHistory API: [{"JobHistoryId":2168,"AgentMachine":"COMMAND","JobId":"0b4b411a-4b26-4492-a575-a10adb43a08a","Schedule":{"Interval":{"Minutes":1}},"JobType":"WinCertInventory","OperationStart":"2023-05-06T00:27:00","OperationEnd":"2023-05-06T00:27:00","Message":"","Result":"Success","Status":"Completed","StorePath":"My","ClientMachine":"iistarget.boingy.com"},{"JobHistoryId":2169,"AgentMachine":"COMMAND","JobId":"0b4b411a-4b26-4492-a575-a10adb43a08a","Schedule":{"Interval":{"Minutes":1}},"JobType":"WinCertInventory","OperationStart":"2023-05-06T00:28:00","OperationEnd":"2023-05-06T00:28:00","Message":"","Result":"Success","Status":"Completed","StorePath":"My","ClientMachine":"iistarget.boingy.com"},{"JobHistoryId":2170,"AgentMachine":"COMMAND","JobId":"0b4b411a-4b26-4492-a575-a10adb43a08a","Schedule":{"Interval":{"Minutes":1}},"JobType":"WinCertInventory","OperationStart":"2023-05-06T00:29:00","OperationEnd":"2023-05-06T00:29:00","Message":"","Result":"Success","Status":"Completed","StorePath":"My","ClientMachine":"iistarget.boingy.com"},{"JobHistoryId":2171,"AgentMachine":"COMMAND","JobId":"0b4b411a-4b26-4492-a575-a10adb43a08a","Schedule":{"Interval":{"Minutes":1}},"JobType":"WinCertInventory","OperationStart":"2023-05-06T00:30:00","OperationEnd":null,"Message":"","Result":"Unknown","Status":"InProcess","StorePath":"My","ClientMachine":"iistarget.boingy.com"}]
-2023-05-05 17:30:00.3844 E014A91C-90BA-46C8-B185-9F9290993C69 KFSample.SampleJobCompletionHandler [Trace] - Exiting Job Completion Handler for orchestrator [fa406103-d84a-43ea-8bfd-99bc1f064281/COMMAND] and JobType 'WinCertInventory' with status: True
+2023-05-05 17:30:00.3683 E014A91C-90BA-46C8-B185-9F9290993C69 KFSample.SampleJobCompletionHandler [Trace] - Results of JobHistory API: [{"JobHistoryId":2168,"AgentMachine":"orchestrator.kftrain.lab","JobId":"0b4b411a-4b26-4492-a575-a10adb43a08a","Schedule":{"Interval":{"Minutes":1}},"JobType":"WinCertInventory","OperationStart":"2023-05-06T00:27:00","OperationEnd":"2023-05-06T00:27:00","Message":"","Result":"Success","Status":"Completed","StorePath":"My","ClientMachine":"iistarget.kftrain.lab"},{"JobHistoryId":2169,"AgentMachine":"orchestrator.kftrain.lab","JobId":"0b4b411a-4b26-4492-a575-a10adb43a08a","Schedule":{"Interval":{"Minutes":1}},"JobType":"WinCertInventory","OperationStart":"2023-05-06T00:28:00","OperationEnd":"2023-05-06T00:28:00","Message":"","Result":"Success","Status":"Completed","StorePath":"My","ClientMachine":"iistarget.kftrain.lab"},{"JobHistoryId":2170,"AgentMachine":"orchestrator.kftrain.lab","JobId":"0b4b411a-4b26-4492-a575-a10adb43a08a","Schedule":{"Interval":{"Minutes":1}},"JobType":"WinCertInventory","OperationStart":"2023-05-06T00:29:00","OperationEnd":"2023-05-06T00:29:00","Message":"","Result":"Success","Status":"Completed","StorePath":"My","ClientMachine":"iistarget.kftrain.lab"},{"JobHistoryId":2171,"AgentMachine":"orchestrator.kftrain.lab","JobId":"0b4b411a-4b26-4492-a575-a10adb43a08a","Schedule":{"Interval":{"Minutes":1}},"JobType":"WinCertInventory","OperationStart":"2023-05-06T00:30:00","OperationEnd":null,"Message":"","Result":"Unknown","Status":"InProcess","StorePath":"My","ClientMachine":"iistarget.kftrain.lab"}]
+2023-05-05 17:30:00.3844 E014A91C-90BA-46C8-B185-9F9290993C69 KFSample.SampleJobCompletionHandler [Trace] - Exiting Job Completion Handler for orchestrator [fa406103-d84a-43ea-8bfd-99bc1f064281/orchestrator.kftrain.lab] and JobType 'WinCertInventory' with status: True
 
 ```
 </details>
@@ -322,13 +323,13 @@ Client : https://command.boingy.com/KeyfactorAPI/
 <details><summary>Sample Management Handler Trace</summary>
 
 ```
-2023-05-05 17:30:30.0244 F1CF5BD5-3148-47B5-A24D-5A81F21C86CA KFSample.SampleJobCompletionHandler [Trace] - Entering Job Completion Handler for orchestrator [fa406103-d84a-43ea-8bfd-99bc1f064281/COMMAND] and JobType 'WinCertManagement'
+2023-05-05 17:30:30.0244 F1CF5BD5-3148-47B5-A24D-5A81F21C86CA KFSample.SampleJobCompletionHandler [Trace] - Entering Job Completion Handler for orchestrator [fa406103-d84a-43ea-8bfd-99bc1f064281/orchestrator.kftrain.lab] and JobType 'WinCertManagement'
 2023-05-05 17:30:30.0244 F1CF5BD5-3148-47B5-A24D-5A81F21C86CA KFSample.SampleJobCompletionHandler [Trace] - This handler's favorite animal is: Tiger
 2023-05-05 17:30:30.0244 F1CF5BD5-3148-47B5-A24D-5A81F21C86CA KFSample.SampleJobCompletionHandler [Trace] - The context passed is: 
 [
 AgentId : fa406103-d84a-43ea-8bfd-99bc1f064281,
-Username : BOINGY\CMS_Service,
-ClientMachine : COMMAND,
+Username : KFTRAIN\SVC_Orchestrator,
+ClientMachine : orchestrator.kftrain.lab,
 JobResult : Success,
 JobId : 426ec1ab-9f02-4011-8df9-72c4a603ca90,
 JobType : WinCertManagement,
@@ -337,13 +338,13 @@ OperationType : Add,
 CertificateId : 14,
 RequestTimestamp : 5/6/2023 12:29:32 AM,
 CurrentRetryCount : 0,
-Client : https://command.boingy.com/KeyfactorAPI/
+Client : https://command.kftrain.lab/KeyfactorAPI/
 ]
 2023-05-05 17:30:30.0244 F1CF5BD5-3148-47B5-A24D-5A81F21C86CA KFSample.SampleJobCompletionHandler [Trace] - Dispatching job completion handler for a Management job 426ec1ab-9f02-4011-8df9-72c4a603ca90
 2023-05-05 17:30:30.0244 F1CF5BD5-3148-47B5-A24D-5A81F21C86CA KFSample.SampleJobCompletionHandler [Trace] - Executing the Management handler
 2023-05-05 17:30:30.0244 F1CF5BD5-3148-47B5-A24D-5A81F21C86CA KFSample.SampleJobCompletionHandler [Trace] - Custom logic for Inventory completion handler here
 2023-05-05 17:30:30.0244 F1CF5BD5-3148-47B5-A24D-5A81F21C86CA KFSample.SampleJobCompletionHandler [Trace] - Management job process for an Add operation
-2023-05-05 17:30:30.0244 F1CF5BD5-3148-47B5-A24D-5A81F21C86CA KFSample.SampleJobCompletionHandler [Trace] - Exiting Job Completion Handler for orchestrator [fa406103-d84a-43ea-8bfd-99bc1f064281/COMMAND] and JobType 'WinCertManagement' with status: True
+2023-05-05 17:30:30.0244 F1CF5BD5-3148-47B5-A24D-5A81F21C86CA KFSample.SampleJobCompletionHandler [Trace] - Exiting Job Completion Handler for orchestrator [fa406103-d84a-43ea-8bfd-99bc1f064281/orchestrator.kftrain.lab] and JobType 'WinCertManagement' with status: True
 
 ```
 </details>
@@ -351,13 +352,13 @@ Client : https://command.boingy.com/KeyfactorAPI/
 <details><summary>Sample ReEnrollment Handler Trace</summary>
 
 ```
-2023-05-05 17:33:31.7903 F81ECB91-496C-4C66-8B66-C2BA4C6CE9F5 KFSample.SampleJobCompletionHandler [Trace] - Entering Job Completion Handler for orchestrator [fa406103-d84a-43ea-8bfd-99bc1f064281/COMMAND] and JobType 'WinCertReenrollment'
+2023-05-05 17:33:31.7903 F81ECB91-496C-4C66-8B66-C2BA4C6CE9F5 KFSample.SampleJobCompletionHandler [Trace] - Entering Job Completion Handler for orchestrator [fa406103-d84a-43ea-8bfd-99bc1f064281/orchestrator.kftrain.lab] and JobType 'WinCertReenrollment'
 2023-05-05 17:33:31.7903 F81ECB91-496C-4C66-8B66-C2BA4C6CE9F5 KFSample.SampleJobCompletionHandler [Trace] - This handler's favorite animal is: Tiger
 2023-05-05 17:33:31.7903 F81ECB91-496C-4C66-8B66-C2BA4C6CE9F5 KFSample.SampleJobCompletionHandler [Trace] - The context passed is: 
 [
 AgentId : fa406103-d84a-43ea-8bfd-99bc1f064281,
-Username : BOINGY\CMS_Service,
-ClientMachine : COMMAND,
+Username : KFTRAIN\SVC_Orchestrator,
+ClientMachine : orchestrator.kftrain.lab,
 JobResult : Success,
 JobId : 32354394-955e-4142-a968-479daa294128,
 JobType : WinCertReenrollment,
@@ -366,12 +367,12 @@ OperationType : Unknown,
 CertificateId : 15,
 RequestTimestamp : 5/6/2023 12:32:46 AM,
 CurrentRetryCount : 0,
-Client : https://command.boingy.com/KeyfactorAPI/
+Client : https://command.kftrain.lab/KeyfactorAPI/
 ]
 2023-05-05 17:33:31.7903 F81ECB91-496C-4C66-8B66-C2BA4C6CE9F5 KFSample.SampleJobCompletionHandler [Trace] - Dispatching job completion handler for the re-enrollment job 32354394-955e-4142-a968-479daa294128
 2023-05-05 17:33:31.7903 F81ECB91-496C-4C66-8B66-C2BA4C6CE9F5 KFSample.SampleJobCompletionHandler [Trace] - Executing the Reenrollment handler
 2023-05-05 17:33:31.7903 F81ECB91-496C-4C66-8B66-C2BA4C6CE9F5 KFSample.SampleJobCompletionHandler [Trace] - Custom logic for Reenrollment completion handler here
-2023-05-05 17:33:31.7903 F81ECB91-496C-4C66-8B66-C2BA4C6CE9F5 KFSample.SampleJobCompletionHandler [Trace] - Exiting Job Completion Handler for orchestrator [fa406103-d84a-43ea-8bfd-99bc1f064281/COMMAND] and JobType 'WinCertReenrollment' with status: True
+2023-05-05 17:33:31.7903 F81ECB91-496C-4C66-8B66-C2BA4C6CE9F5 KFSample.SampleJobCompletionHandler [Trace] - Exiting Job Completion Handler for orchestrator [fa406103-d84a-43ea-8bfd-99bc1f064281/orchestrator.kftrain.lab] and JobType 'WinCertReenrollment' with status: True
 
 ```
 </details>
