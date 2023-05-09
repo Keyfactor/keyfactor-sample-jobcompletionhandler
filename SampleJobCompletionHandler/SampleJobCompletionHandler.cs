@@ -218,12 +218,25 @@ namespace KFSample
 
                 if (context.Client != null)
                 {
+                    // Due to Command issue 45418, the HttpClient object passed to us in the context is not always
+                    // in a ready state. Because of this we need to create our own HttpClient and copy the BaseAddress
+                    // from the provided one.
+
+                    HttpClient localClient = new HttpClient(
+                        new HttpClientHandler()
+                        {
+                            UseDefaultCredentials = true,
+                            PreAuthenticate = true
+                        }
+                        )
+                    { BaseAddress = context.Client.BaseAddress };
+
                     // Command API Orchestrator Job History query
                     string query = $@"OrchestratorJobs/JobHistory?pq.queryString=JobID%20-eq%20%22{context.JobId}%22";
 
                     Logger.LogTrace($"Querying Command API with: {query}");
 
-                    HttpResponseMessage response = await context.Client.GetAsync(query);
+                    HttpResponseMessage response = await localClient.GetAsync(query);
 
                     try
                     {
