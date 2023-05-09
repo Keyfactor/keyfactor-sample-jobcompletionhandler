@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.32630.194
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleJobCompletionHandler", "SampleJobCompletionHandler\SampleJobCompletionHandler.csproj", "{D9FF3ADA-5DC7-4FA1-839D-29A894E8881C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D9FF3ADA-5DC7-4FA1-839D-29A894E8881C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D9FF3ADA-5DC7-4FA1-839D-29A894E8881C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D9FF3ADA-5DC7-4FA1-839D-29A894E8881C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D9FF3ADA-5DC7-4FA1-839D-29A894E8881C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {26C0B2EE-EDEA-4E49-8B19-9594293ADB08}
+	EndGlobalSection
+EndGlobal
