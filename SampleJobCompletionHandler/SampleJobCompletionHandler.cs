@@ -1,5 +1,5 @@
 ﻿/*
-// Copyright 2023 Keyfactor                                                   
+// Copyright 2025 Keyfactor                                                   
 // Licensed under the Apache License, Version 2.0 (the "License"); you may    
 // not use this file except in compliance with the License.  You may obtain a 
 // copy of the License at http://www.apache.org/licenses/LICENSE-2.0.  Unless 
@@ -16,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 
 // This is a sample implementation of the Keyfactor Command Orchestrator Job Completion Handler. 
 // This code can be run after either successful or failed completion of an orchestrator job and
@@ -87,15 +88,17 @@ namespace KFSample
         #region Unity Properties
 
         // JobTypes is a required public property. It will contain a comma separated list of the job type GUIDs that
-        // that the handler should be prepared to handle. This value is set in the Unity configuration.
+        // that the handler should be prepared to handle. This value is set by passed in Options in the manifest.json.
         // Command will only call this handler when jobs of types in this list are complete.
-        // This sample doesn't make use of this property.
+        // This sample doesn't make use of this property directly, but it is used implicitly by the platform.
 
         public string JobTypes { get; set; }
 
-        // Custom parameters may be passed into the completion handler via the Unity registration in the web.config 
-        // file for the Orchestrator API endpoint. When the Unity Dependency Injection loads this class, it will apply
-        // values in the configuration to the class public properties.
+        // Custom parameters may be passed into the completion handler via the Options in the manifest.json 
+        // file for the Orchestrator API endpoint Extensions. The Options are loaded in the constructor but
+        // they need to be accessed to be applied to public properties defined in this class.
+        //
+        // These public properties are no longer set automatically by dependency injection.
         //
         // Typically these would be used to configure the behavior of the handler. These might be used to indicate
         // if the logic in the handler should operate in production or test mode; or to configure external API 
@@ -134,6 +137,17 @@ namespace KFSample
         // as async. Because this sample demonstrates making async calls to the Command API, we need to transition
         // from synchronous to asynchronous - this is done by wrapping our dispatch call in a Task.Run
 
+        private readonly Options _options;
+        public class Options
+        {
+            public string JobTypes { get; set; }
+        }
+
+        public SampleJobCompletionHandler(IOptions<Options> options)
+        {
+            _options = options.Value;
+            JobTypes = _options.JobTypes;
+        }
         public bool RunHandler(OrchestratorJobCompleteHandlerContext context)
         {
             Task<bool> RunHandlerResult = Task.Run<bool>(async () => await AsyncRunHandler(context));
@@ -154,9 +168,10 @@ namespace KFSample
                 return false;
             }
 
-            Logger.LogTrace($"Entering Job Completion Handler for orchestrator [{context.AgentId}/{context.ClientMachine}] and JobType '{context.JobType}'");
-            Logger.LogTrace($"This handler's favorite animal is: {FavoriteAnimal}");
-            Logger.LogTrace($"The context passed is: \r\n[\r\n{ParseContext(context)}\r\n]");
+            Logger.LogInformation($"Entering Job Completion Handler for orchestrator [{context.AgentId}/{context.ClientMachine}] and JobType '{context.JobType}'");
+            Logger.LogInformation($"This handler's favorite animal is: {FavoriteAnimal}");
+            Logger.LogInformation($"The context passed is: \r\n[\r\n{ParseContext(context)}\r\n]");
+            Logger.LogInformation($"Version of Keyfactor.Logging: {typeof(LogHandler).Assembly.GetName().Version.ToString()}");
 
             // Depending on the job type, call the appropriate handler. We switch on the job name constants
             // define above.
