@@ -38,19 +38,14 @@ using Microsoft.Extensions.Options;
 // The TLDR; is that you need a working Keyfactor Command instance that is configured with scheduled
 // inventory job on a WinCert store type. This assembly needs to be compiled and registered on the 
 // Command instance, and the deployment specific GUIDs for the WinCert store jobs need to be configured
-// in the Unity registration. 
+// in the manifest.json file for the extension. A sample manifest.json is included in this repository.
 //
-// The compiled assembly SampleJobCompletionHandler.dll goes in C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\bin
-//
-// The web.config Orchestrator API normally at C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\web.config
-// on the Command (IIS) server needs to have the following Unity registration added (with the job type GUIDs) specified.
-//
-/*
-<register type="IOrchestratorJobCompleteHandler" mapTo="KFSample.SampleJobCompletionHandler, SampleJobCompletionHandler" name="SampleJobCompletionHandler">
-    <property name="JobTypes" value="" />            <!-- Comma separated list of Job Type GUIDs to process -->
-    <property name="FavoriteAnimal" value="Tiger" /> <!-- Sample parameter to pass into the handler. This parameter must be a public property on the class -->
-</register>
-*/
+// The compiled assembly SampleJobCompletionHandler.dll goes in
+// C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\Extensions\JobCompleteHandlers
+// The manifest.json and all DLL dependencies should be included with the Completion Handler as well.
+// To have the binary dependencies included in build output, the following line should be included in the .csproj file:
+// <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+// An example can be seen in the SampleJobCompletionHandler.csproj for this project.
 //
 // Adding a rule to the NLog configuration which traces output from this code can be helpful. The NLog configuration
 // is normally at C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\NLog_Orchestrators.config. The 
@@ -85,28 +80,54 @@ namespace KFSample
 
         #endregion
 
-        #region Unity Properties
+        #region Handler Configuration Options and Parameters
+
+        // IMPORTANT: Public properties are no longer set automatically by dependency injection.
+        // The Options system needs to be used to pass in and use settings for extensions using a manifest.json.
+
+        // Parameters may be passed into the completion handler via Options in the manifest.json file.
+        // The Options are loaded in the constructor. Options might not be specified in the manifest.json, so the
+        // constructor should handle the fields appropriately. Options need to be accessed to be applied to
+        // public properties defined in this class.
+
+        // Typically these would be used to configure the behavior of the handler or other extension. These might be
+        // used to indicate if the logic in the handler should operate in production or test mode; or to configure
+        // external API addresses or credentials needed to talk to external systems.
 
         // JobTypes is a required public property. It will contain a comma separated list of the job type GUIDs that
-        // that the handler should be prepared to handle. This value is set by passed in Options in the manifest.json.
+        // that the handler should be prepared to handle. This value must be set by passed in Options in the manifest.json.
         // Command will only call this handler when jobs of types in this list are complete.
         // This sample doesn't make use of this property directly, but it is used implicitly by the platform.
 
         public string JobTypes { get; set; }
 
-        // Custom parameters may be passed into the completion handler via the Options in the manifest.json 
-        // file for the Orchestrator API endpoint Extensions. The Options are loaded in the constructor but
-        // they need to be accessed to be applied to public properties defined in this class.
-        //
-        // These public properties are no longer set automatically by dependency injection.
-        //
-        // Typically these would be used to configure the behavior of the handler. These might be used to indicate
-        // if the logic in the handler should operate in production or test mode; or to configure external API 
-        // addresses or credentials needed to talk to external systems.
-        //
-        // In this sample we will simply log out the parameter passed in.
+        // Custom options for configuration settings or other purposes can also be defined.
+        // In this sample an option with a string value is passed in and will be logged.
 
         public string FavoriteAnimal { get; set; }
+
+        private readonly Options _options;
+        
+        // IMPORTANT: The inferred type of the Options subclass here is critical for loading the IOptions<Options>
+        // object correctly. Creating the class Options as a public subclass is the most straightforward way to do this.
+        // If defining the Options subclass in a separate file, note that the full type
+        // MUST BE: <extension namespace>.<extension type>.Options to load properly.
+        public class Options
+        {
+            public string? JobTypes { get; set; }
+            public string? FavoriteAnimal { get; set; }
+        }
+
+        public SampleJobCompletionHandler(IOptions<Options> options)
+        {
+            _options = options.Value;
+            if (string.IsNullOrEmpty(_options.JobTypes))
+            {
+                throw new Exception("JobTypes must be specified in Options in order for this Completion Handler to run.");
+            }
+            JobTypes = _options.JobTypes;
+            FavoriteAnimal = string.IsNullOrEmpty(_options.FavoriteAnimal) ? "Unspecified" : _options.FavoriteAnimal;
+        }
 
         #endregion
 
@@ -129,7 +150,7 @@ namespace KFSample
 
         #region Handler Entry Point
 
-        // Whenever an orchestrator job completes whose JobType GUID is in the Unity configured list of GUIDs (JobTypes),
+        // Whenever an orchestrator job completes whose JobType GUID is in the JobTypes public property,
         // the RunHandler method is called and passed a context object containing the details of the job that has
         // completed. It is up to the code in the handler to perform whatever custom processing is desired.
         //
@@ -137,17 +158,6 @@ namespace KFSample
         // as async. Because this sample demonstrates making async calls to the Command API, we need to transition
         // from synchronous to asynchronous - this is done by wrapping our dispatch call in a Task.Run
 
-        private readonly Options _options;
-        public class Options
-        {
-            public string JobTypes { get; set; }
-        }
-
-        public SampleJobCompletionHandler(IOptions<Options> options)
-        {
-            _options = options.Value;
-            JobTypes = _options.JobTypes;
-        }
         public bool RunHandler(OrchestratorJobCompleteHandlerContext context)
         {
             Task<bool> RunHandlerResult = Task.Run<bool>(async () => await AsyncRunHandler(context));
@@ -223,8 +233,7 @@ namespace KFSample
                 // the security context of Application Pool with which the Orchestrator endpoint is running as. 
                 // Assuming that Windows Authentication is enabled on the endpoint (which is by default), and
                 // assuming that the App Pool account has been granted the appropriate API privileges, this allows
-                // easy calling of the API without having to manage a set of credentials in code or in the Unity
-                // configuration.
+                // easy calling of the API without having to manage a set of credentials in code or in the manifest.json.
 
                 // In this example we retrieve the job history for the job that just completed. We don't do anything
                 // with the results, but history could be examined to see if the job we repeatedly failing and then
