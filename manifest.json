@@ -1,0 +1,14 @@
+{
+  "extensions": {
+    "Keyfactor.Platform.Extensions.IOrchestratorJobCompleteHandler": {
+      "SampleJobCompletionHandler": {
+        "assemblypath": "SampleJobCompletionHandler.dll",
+        "TypeFullName": "KFSample.SampleJobCompletionHandler",
+        "Options": {
+          "JobTypes": "7a07f123-a6ad-41f6-8dba-08fdf5320f84,b8054afc-e3df-47d6-a0ea-cf8abcc08978", // Cert Store Type Job Type GUIDs
+          "FavoriteAnimal": "Hippopotamus"
+        }
+      }
+    }
+  }
+}

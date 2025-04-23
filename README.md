@@ -13,7 +13,9 @@ Typical use cases would be triggering external business workflow systems on succ
 This repository contains a sample job completion handler that traces out the job context information provided and
 demonstrates making an API call back into the Command platform.
 
-Job Completion Handlers were introduced in Command version 9.0. This sample has been tested with Command Version 10.3
+Job Completion Handlers were introduced in Command version 9.0. This sample has been tested with Command Version 11.2.
+The way Completion Handlers and other extensions are loaded in Command changed in version 11.
+Please review the comments and examples in this repository in order to configure and load the Completion Handler correctly.
 
 
 ## Getting Started
@@ -88,47 +90,34 @@ The package repository is public read but does require a GitHub login.
 Use Visual Studio to build the solution file in this repository.
 
 Note that this extension will need to be compiled with the same version of the .NET Framework as is the Command 
-instance it will be plugged into. For Keyfactor Command 10.3 and prior, you will need to target .NET Framework 4.7.2
-(which this solution does target).
-Future versions of Command are planed to be targeted with .NET Core and if this sample is built against future versions,
-the target framework may need to be updated.
+instance it will be plugged into. This project targets both .NET 6.0 and .NET 8.0. The appropriate output can be selected for the Command version in use.
+Future versions of Command are planed to be targeted for current versions of .NET. 
+If this sample or production Completion Handlers are built against future versions, the target framework may need to be updated.
 
 #### 4 - Copy the assembly to the Command Server
 
-Copy the compiled assembly (`SampleJobCompletionHandler.dll`) to bin folder for the Orchestrator API endpoint on the 
-Command Server. This is typically `C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\bin `
-    
-For this sample only the above DLL needs to be copied to the target system.
+Copy the compiled assembly (`SampleJobCompletionHandler.dll`), `manifest.json` and required dependencies to the correct location
+for Extensions for the Orchestrator API endpoint on the Command Server. You may organize these under a single sub-directory.
+This is typically `C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\Extensions\JobCompleteHandlers`
 
 In cases where your custom code may need additional dependent assemblies, make sure to only copy assemblies that are specific to your handler. 
-Do not overwrite DLLs that ship with the Command platform. 
-You will need to make sure that the handler references the same versions of libraries already in use in the WebAgentServices location.
+As long as Extensions are copied into an isolated folder, there is no concern of overwriting libraries. Different versions of a library can be 
+used as long as they are included correctly in the Extensions folder in use.
 
 #### 5 - Register the handler on the Command Server
 
-Job completion handlers are registered via Unity.
+Job completion handlers are loaded by the extension loader system using the `manifest.json` file.
 
-Edit the web.config for the Orchestrator API endpoint on the Command Server. This is typically found at 
-`C:\Program Files\Keyfactor\Keyfactor Platform\WebAgentServices\web.config`
+A sample `manifest.json` file for this extension is included in this repository. It should be edited with the correct Options values.
+The correct job type GUIDs retrieved above should be entered in a comma-seperated list in the JobTypes property.
 
-Add the following new registration inside of `<unity><container>` along with the other <register ... /> items.
-Use the job type GUIDs from your environment instead of the ones below.  
-```
-<register type="IOrchestratorJobCompleteHandler" mapTo="KFSample.SampleJobCompletionHandler, SampleJobCompletionHandler" name="SampleJobCompletionHandler">
-    <property name="JobTypes" value="49b3a17d-cada-4ec8-84c6-7719bf5beef3,4be14534-55b0-4cd7-9871-536b55b5e973,e868b3f8-9b6a-48b1-91c8-683d71d94f61" />  <!-- Comma separated list of Job Type GUIDs to process -->
-    <property name="FavoriteAnimal" value="Tiger" /> <!-- Sample parameter to pass into the handler. This parameter must be a public property on the class -->
-</register>
-```
-Command ships with a `SendEmailOrchestratorJobCompleteHandler` that sends emails on job completion.
-The registration for this handler is commented out, but is an easy thing to search for when locating where to 
-put the registration for this sample.
+Multiple completion handlers may be registered. If they are located in the same sub-directory for Extension loading,
+the `manifest.json` file needs to specify __all__ extensions in a directory to load. If you do not wish to merge `manifest.json`
+files, organize extensions into seperate sub-directories entirely.
 
-Multiple completion handlers may be registered, and the same handler may be registered multiple times
-(presumably with different sets of JobTypes), but the Unity "name" value must be unique across all registrations.
-
-Note that a broken Unity registration or a registration that points to an assembly that cannot be loaded can prevent
+Note that an incorrect `manifest.json` file or a `manifest.json` that points to an assembly that cannot be loaded can prevent
 the Orchestrator API from operating and prevent all Orchestrators from contacting the platform. Be sure the check the
-logs (see below) for proper operation any time the Unity registration or the corresponding Assemblies are changed.
+logs (see below) for proper operation any time the `manifest.json` or the corresponding Assemblies are changed.
 
 #### 6 - Enable trace logging for the handler
 
@@ -147,7 +136,7 @@ just before the default logging rule:
 
 #### 7 - Restart IIS
 
-Changes to Unity registration will require that the web server is restarted, which can be done by running the iisreset command.
+Changes to extensions and a `manifest.json` will require that the web server is restarted, which can be done by running the iisreset command.
 
 At this point trace messages should appear in the Orchestrator API endpoint logs whenever a WinCert store type job
 is completed by an orchestrator. By default the logs will be at `C:\Keyfactor\logs\Command_OrchestratorsAPI_Log.txt`
@@ -281,7 +270,7 @@ The context fields provided are:
 |JobResult | Result reported by Orchestrator. (Success, Warning, Failure, Unknown) |
 |JobId | These will be fixed for reoccurring jobs, such as inventory, and change for one time jobs |
 |JobType | String based Job type |
-|JobTypeId | GUID for job type. These will be unique per Command instance. These are the values that were configured in the JobTypes Unity configuration|
+|JobTypeId | GUID for job type. These will be unique per Command instance. These are the values that were configured in the JobTypes Options |
 |OperationType | Some job types have multiple operations. While inventory jobs report "Unknown", management jobs can report "Add" and "Remove" |
 |CertificateID | The internal Command Id for the certificate related to the job. Useful for knowing which certificate was added, remove, or enrolled |
 |RequestTimestamp | When the job was originally scheduled |
@@ -381,6 +370,6 @@ Client : https://command.kftrain.lab/KeyfactorAPI/
 This document has provided an example Job Completion Handler for a specific job type and can be extended to handle other job types.
 Information was provided for using the Keyfactor APIs to find the correct GUIDs to process specific job types.
 The sample also provides examples for handling Inventory, Management and Reenrollment jobs, along with how to access the context properties and a working HTTP Client.
-Once the handler has been developed, instructions were provided describing how to add the handler to the Unity container so Keyfactor Command can call the appropriate handler.
+Once the handler has been developed, instructions were provided describing how to load the handler with a `manifest.json` file so Keyfactor Command can call the appropriate handler.
 For additional information, please refer to the comments in the example source code.
 
